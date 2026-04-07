@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio ULTIMATE (Full Working)</title>
+<title>Character Studio FINAL (Fixed & Improved)</title>
 <style>
 body{margin:0;font-family:Segoe UI;background:#0f1220;color:white}
 header{padding:15px;background:#1b1f3a;font-size:20px}
@@ -11,26 +11,23 @@ header{padding:15px;background:#1b1f3a;font-size:20px}
 .card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px}
 button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
 input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
-#map{position:relative;height:400px;background:#111;border-radius:10px;overflow:hidden}
-.node{position:absolute;padding:6px 10px;border-radius:10px;background:#6c5ce7;cursor:grab}
-.line{position:absolute;height:2px;background:#aaa;transform-origin:left center}
+#map{position:relative;height:450px;background:#111;border-radius:10px;overflow:hidden}
+.node{position:absolute;padding:8px 12px;border-radius:10px;background:#6c5ce7;cursor:grab;user-select:none}
+.line{position:absolute;height:3px;background:red;transform-origin:left center}
+.label{position:absolute;color:white;font-size:12px}
 </style>
 </head>
 <body>
-<header>🚀 Character Studio ULTIMATE (Everything Working)</header>
+<header>🚀 Character Studio FINAL (Actually Works)</header>
 <div class="container">
 
 <div class="sidebar">
-<h3>Sections</h3>
-<div id="sections"></div>
-<button onclick="addSection()">+ Add Section</button>
-
 <h3>Settings</h3>
 <label>Background</label>
-<input type="color" id="bgPicker">
-<label>Node Size</label>
-<input type="range" id="sizePicker" min="40" max="120" value="70">
-<button onclick="applySettings()">Apply Settings</button>
+<input type="color" id="bg">
+<label>Character Size</label>
+<input type="range" id="size" min="60" max="160" value="90">
+<button onclick="applySettings()">Apply</button>
 
 <h3>Timeline</h3>
 <input id="time" placeholder="Time">
@@ -48,7 +45,7 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <select id="traitSelect"></select>
 <button onclick="addTrait()">Add Trait</button>
 <div id="traitList"></div>
-<button onclick="addCharacter()">Create Character</button>
+<button onclick="addCharacter()">Create</button>
 </div>
 
 <div class="card">
@@ -57,7 +54,8 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 </div>
 
 <div class="card">
-<h3>Map (Drag characters)</h3>
+<h3>Map</h3>
+<button onclick="startConnectionMode()">Add Connection Mode</button>
 <div id="map"></div>
 </div>
 
@@ -65,37 +63,28 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 </div>
 
 <script>
-const TRAITS=["Brave","Smart","Funny","Loyal","Evil","Kind","Cold","Hot-headed","Calm","Leader","Shy","Confident","Greedy","Curious","Strategic"];
+const TRAITS=[
+"Brave","Smart","Funny","Loyal","Evil","Kind","Cold","Hot-headed","Calm","Leader",
+"Shy","Confident","Greedy","Curious","Strategic","Lazy","Aggressive","Caring",
+"Jealous","Honest","Manipulative","Creative","Fearless","Sarcastic","Stubborn"
+];
 
-let data=JSON.parse(localStorage.getItem("ULTIMATE"))||{
-sections:["Main"],current:"Main",characters:[],timeline:[]
+let data=JSON.parse(localStorage.getItem("FINAL"))||{
+characters:[],timeline:[],connections:[]
 };
 
-let settings=JSON.parse(localStorage.getItem("SETTINGS"))||{
-bg:"#0f1220",nodeSize:70
-};
-
+let settings={size:90,bg:"#0f1220"};
 let tempTraits=[];
+let connectionMode=false;
+let selectedChar=null;
 
-function save(){
-localStorage.setItem("ULTIMATE",JSON.stringify(data));
-localStorage.setItem("SETTINGS",JSON.stringify(settings));
-render();
-}
+function save(){localStorage.setItem("FINAL",JSON.stringify(data));render();}
 
 function applySettings(){
-settings.bg=document.getElementById("bgPicker").value;
-settings.nodeSize=document.getElementById("sizePicker").value;
+settings.size=document.getElementById("size").value;
+settings.bg=document.getElementById("bg").value;
 document.body.style.background=settings.bg;
-save();
-}
-
-function addSection(){
-const name=prompt("Section name");
-if(!name)return;
-data.sections.push(name);
-data.current=name;
-save();
+render();
 }
 
 function addTrait(){
@@ -122,45 +111,27 @@ const name=document.getElementById("name").value;
 const desc=document.getElementById("desc").value;
 if(!name)return;
 
-data.characters.push({
-id:Date.now(),name,desc,traits:[...tempTraits],
-x:100,y:100,section:data.current,links:[]
-});
+data.characters.push({id:Date.now(),name,desc,traits:[...tempTraits],x:100,y:100});
 
 tempTraits=[];
+renderTraits();
 save();
 }
 
-function deleteChar(id){
-data.characters=data.characters.filter(c=>c.id!==id);
-save();
-}
-
-function link(a,b){
-const type=prompt("Relationship (friend, enemy, etc)");
-a.links.push({target:b.id,type});
-save();
+function startConnectionMode(){
+connectionMode=true;
+selectedChar=null;
+alert("Click first character, then second");
 }
 
 function addEvent(){
 const time=document.getElementById("time").value;
 const event=document.getElementById("event").value;
-if(!event)return;
 data.timeline.push({time,event});
 save();
 }
 
 function render(){
-
-// sections
-const sDiv=document.getElementById("sections");
-sDiv.innerHTML="";
-data.sections.forEach(s=>{
-const btn=document.createElement("button");
-btn.innerText=s;
-btn.onclick=()=>{data.current=s;save();};
-sDiv.appendChild(btn);
-});
 
 // traits
 const tSel=document.getElementById("traitSelect");
@@ -169,25 +140,9 @@ tSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
 // characters
 const cDiv=document.getElementById("characters");
 cDiv.innerHTML="";
-data.characters.filter(c=>c.section===data.current).forEach(c=>{
+data.characters.forEach(c=>{
 const div=document.createElement("div");
-div.innerHTML=`<b>${c.name}</b><br>${c.desc}<br>${c.traits.join(", ")}`;
-
-const del=document.createElement("button");
-del.innerText="Delete";
-del.onclick=()=>deleteChar(c.id);
-div.appendChild(del);
-
-// link buttons
- data.characters.forEach(o=>{
- if(o.id!==c.id){
- const btn=document.createElement("button");
- btn.innerText="Link → "+o.name;
- btn.onclick=()=>link(c,o);
- div.appendChild(btn);
- }
- });
-
+div.innerHTML=`<b>${c.name}</b> (${c.traits.join(", ")})`;
 cDiv.appendChild(div);
 });
 
@@ -196,7 +151,7 @@ const tDiv=document.getElementById("timeline");
 tDiv.innerHTML="";
 data.timeline.forEach(e=>{
 const d=document.createElement("div");
-d.innerText=e.time+": "+e.event;
+d.innerText=e.time+" - "+e.event;
 tDiv.appendChild(d);
 });
 
@@ -207,35 +162,46 @@ function renderMap(){
 const map=document.getElementById("map");
 map.innerHTML="";
 
-// lines
- data.characters.forEach(c=>{
- c.links.forEach(l=>{
- const t=data.characters.find(x=>x.id===l.target);
- if(t && c.section===data.current && t.section===data.current){
- const line=document.createElement("div");
- const dx=t.x-c.x;
- const dy=t.y-c.y;
+// connections
+ data.connections.forEach(con=>{
+ const a=data.characters.find(x=>x.id===con.a);
+ const b=data.characters.find(x=>x.id===con.b);
+ if(a&&b){
+ const dx=b.x-a.x;
+ const dy=b.y-a.y;
  const dist=Math.sqrt(dx*dx+dy*dy);
  const angle=Math.atan2(dy,dx)*180/Math.PI;
 
+ const line=document.createElement("div");
  line.className="line";
  line.style.width=dist+"px";
- line.style.left=c.x+"px";
- line.style.top=c.y+"px";
+ line.style.left=a.x+"px";
+ line.style.top=a.y+"px";
  line.style.transform=`rotate(${angle}deg)`;
+
+ line.onclick=()=>{
+ alert(`${a.name}: ${a.desc}\n\n${b.name}: ${b.desc}`);
+ };
+
+ const label=document.createElement("div");
+ label.className="label";
+ label.innerText=con.type;
+ label.style.left=(a.x+b.x)/2+"px";
+ label.style.top=(a.y+b.y)/2+"px";
+
  map.appendChild(line);
+ map.appendChild(label);
  }
- });
  });
 
 // nodes
- data.characters.filter(c=>c.section===data.current).forEach(c=>{
+ data.characters.forEach(c=>{
  const node=document.createElement("div");
  node.className="node";
  node.innerText=c.name;
  node.style.left=c.x+"px";
  node.style.top=c.y+"px";
- node.style.width=settings.nodeSize+"px";
+ node.style.width=settings.size+"px";
 
  node.onmousedown=(e)=>{
  const offsetX=e.offsetX;
@@ -247,10 +213,25 @@ map.innerHTML="";
  renderMap();
  }
 
- function up(){document.removeEventListener("mousemove",move);}
+ function up(){
+ document.removeEventListener("mousemove",move);
+ }
 
  document.addEventListener("mousemove",move);
  document.addEventListener("mouseup",up,{once:true});
+ };
+
+ node.onclick=()=>{
+ if(connectionMode){
+ if(!selectedChar){selectedChar=c;}
+ else{
+ const type=prompt("Relationship type");
+ data.connections.push({a:selectedChar.id,b:c.id,type});
+ connectionMode=false;
+ selectedChar=null;
+ save();
+ }
+ }
  };
 
  map.appendChild(node);
@@ -262,6 +243,3 @@ render();
 
 </body>
 </html>
-
-
-
