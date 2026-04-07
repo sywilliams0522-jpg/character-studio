@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio PRO+ FINAL</title>
+<title>Character Studio RELATION FIX</title>
 <style>
 body{margin:0;font-family:Segoe UI}
 .dark{background:#000;color:#fff}
@@ -13,30 +13,21 @@ header{padding:15px;background:#1b1f3a;color:white;font-size:20px}
 .card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px;color:white}
 button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
 input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
-#map{position:relative;height:500px;border-radius:10px;overflow:hidden}
+#map{position:relative;height:500px;background:#111;border-radius:10px;overflow:hidden}
 .node{position:absolute;padding:6px;border-radius:10px;cursor:grab;user-select:none;text-align:center}
 .line{position:absolute;height:3px;transform-origin:left center}
 .label{position:absolute;font-size:12px}
+.modal{position:fixed;top:20%;left:35%;background:#222;padding:15px;border-radius:10px;display:none}
 </style>
 </head>
 <body class="dark">
-<header>🚀 Character Studio PRO+ FINAL</header>
+<header>🚀 Character Studio (RELATION FIXED)</header>
 <div class="container">
 
 <div class="sidebar">
-<h3>Mode</h3>
-<button onclick="toggleMode()">Toggle Dark / Light</button>
-
-<h3>Map Color</h3>
-<input type="color" id="mapColor" value="#111">
-<button onclick="applyMapColor()">Apply</button>
-
-<h3>Character Size</h3>
-<input type="range" id="size" min="30" max="150" value="80">
-<button onclick="applySettings()">Apply</button>
-
-<h3>All Characters</h3>
-<div id="characterList"></div>
+<button onclick="toggleMode()">Toggle Dark/Light</button>
+<h3>Characters</h3>
+<div id="charList"></div>
 </div>
 
 <div class="main">
@@ -45,120 +36,101 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <h3>Create Character</h3>
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
-<input type="color" id="charColor" value="#6c5ce7">
-
-<input id="traitSearch" placeholder="Search trait..." oninput="filterTraits()">
-<select id="traitSelect"></select>
-<button onclick="addTrait()">Add Trait</button>
-<button onclick="addCustomTrait()">+ Custom Trait</button>
-
-<div id="traitList"></div>
+<input type="color" id="color" value="#6c5ce7">
 <button onclick="addCharacter()">Create</button>
 </div>
 
 <div class="card">
 <h3>Map</h3>
-<button onclick="startConnectionMode()">Add Connection</button>
+<button onclick="openRelationUI()">Add Relationship</button>
 <div id="map"></div>
 </div>
 
 </div>
 </div>
 
+<div class="modal" id="relationUI">
+<h3>Create Relationship</h3>
+<label>Character 1</label>
+<select id="charA"></select>
+<label>Character 2</label>
+<select id="charB"></select>
+<label>Type</label>
+<select id="relType"></select>
+<label>Color</label>
+<input type="color" id="relColor" value="#ff0000">
+<button onclick="createRelation()">Create</button>
+<button onclick="closeRelationUI()">Cancel</button>
+</div>
+
 <script>
-let TRAITS=["Aggressive","Brave","Calm","Caring","Charming","Cold","Confident","Creative","Curious","Determined","Evil","Fearless","Funny","Greedy","Honest","Impulsive","Jealous","Kind","Lazy","Leader","Loyal","Manipulative","Optimistic","Patient","Pessimistic","Reckless","Sarcastic","Selfish","Selfless","Shy","Smart","Strategic","Stubborn","Wise"].sort();
+let REL_TYPES=["Friend","Enemy","Sibling","Brother","Sister","Married","Dating","Parent","Child","Rival","Mentor","Student"];
 
-let RELATIONSHIPS=["Friend","Best Friend","Enemy","Rival","Sibling","Brother","Sister","Married","Dating","Parent","Child","Mentor","Student","Boss","Employee"];
-
-let data=JSON.parse(localStorage.getItem("PROPLUS"))||{
-characters:[],connections:[]
-};
-
-let settings={size:80,mapColor:"#111"};
-let tempTraits=[];
-let connectionMode=false;
-let selectedChar=null;
+let data=JSON.parse(localStorage.getItem("REL_FIX"))||{characters:[],connections:[]};
 let dragging=false;
 
-function save(){localStorage.setItem("PROPLUS",JSON.stringify(data));render();}
+function save(){localStorage.setItem("REL_FIX",JSON.stringify(data));render();}
 
 function toggleMode(){
-if(document.body.classList.contains("dark")){
-document.body.classList.replace("dark","light");
-}else{
-document.body.classList.replace("light","dark");
-}
-}
-
-function applySettings(){
-settings.size=parseInt(document.getElementById("size").value);
-render();
-}
-
-function applyMapColor(){
-settings.mapColor=document.getElementById("mapColor").value;
-document.getElementById("map").style.background=settings.mapColor;
-}
-
-function filterTraits(){
-const val=document.getElementById("traitSearch").value.toLowerCase();
-const tSel=document.getElementById("traitSelect");
-tSel.innerHTML=TRAITS.filter(t=>t.toLowerCase().includes(val)).map(t=>`<option>${t}</option>`).join("");
-}
-
-function addCustomTrait(){
-const t=prompt("Custom trait");
-if(t){TRAITS.push(t);TRAITS.sort();filterTraits();}
-}
-
-function addTrait(){
-const val=document.getElementById("traitSelect").value;
-if(val&&!tempTraits.includes(val)){
-tempTraits.push(val);
-renderTraits();
-}
-}
-
-function renderTraits(){
-const div=document.getElementById("traitList");
-div.innerHTML="";
-tempTraits.forEach((t,i)=>{
-const span=document.createElement("span");
-span.innerText=t+" ❌ ";
-span.onclick=()=>{tempTraits.splice(i,1);renderTraits();};
-div.appendChild(span);
-});
+document.body.classList.toggle("dark");
+document.body.classList.toggle("light");
 }
 
 function addCharacter(){
 const name=document.getElementById("name").value;
 const desc=document.getElementById("desc").value;
-const color=document.getElementById("charColor").value;
+const color=document.getElementById("color").value;
 if(!name)return;
 
-data.characters.push({id:Date.now(),name,desc,color,traits:[...tempTraits],x:150,y:150});
-
-tempTraits=[];
-renderTraits();
+data.characters.push({id:Date.now(),name,desc,color,x:100,y:100});
 save();
 }
 
-function startConnectionMode(){
-connectionMode=true;
-selectedChar=null;
-alert("Click 2 characters");
+function openRelationUI(){
+const modal=document.getElementById("relationUI");
+modal.style.display="block";
+
+const charA=document.getElementById("charA");
+const charB=document.getElementById("charB");
+charA.innerHTML="";
+charB.innerHTML="";
+
+ data.characters.forEach(c=>{
+ let o1=document.createElement("option");
+ o1.value=c.id;o1.textContent=c.name;
+ charA.appendChild(o1);
+
+ let o2=document.createElement("option");
+ o2.value=c.id;o2.textContent=c.name;
+ charB.appendChild(o2);
+ });
+
+const relType=document.getElementById("relType");
+relType.innerHTML=REL_TYPES.map(r=>`<option>${r}</option>`).join("");
+}
+
+function closeRelationUI(){document.getElementById("relationUI").style.display="none";}
+
+function createRelation(){
+const a=parseInt(document.getElementById("charA").value);
+const b=parseInt(document.getElementById("charB").value);
+const type=document.getElementById("relType").value;
+const color=document.getElementById("relColor").value;
+
+if(a===b)return alert("Pick 2 different characters");
+
+data.connections.push({a,b,type,color});
+closeRelationUI();
+save();
 }
 
 function render(){
-filterTraits();
 
-// character list
-const list=document.getElementById("characterList");
+// list
+const list=document.getElementById("charList");
 list.innerHTML="";
 data.characters.forEach(c=>{
-const div=document.createElement("div");
-div.innerText=c.name;
-list.appendChild(div);
+let d=document.createElement("div");d.innerText=c.name;list.appendChild(d);
 });
 
 renderMap();
@@ -167,17 +139,17 @@ renderMap();
 function renderMap(){
 const map=document.getElementById("map");
 map.innerHTML="";
-map.style.background=settings.mapColor;
 
-// connections
+// lines
  data.connections.forEach(con=>{
  const a=data.characters.find(x=>x.id===con.a);
  const b=data.characters.find(x=>x.id===con.b);
- if(a&&b){
- const ax=a.x+settings.size/2;
- const ay=a.y+settings.size/2;
- const bx=b.x+settings.size/2;
- const by=b.y+settings.size/2;
+ if(!a||!b)return;
+
+ const ax=a.x+40;
+ const ay=a.y+40;
+ const bx=b.x+40;
+ const by=b.y+40;
 
  const dx=bx-ax;
  const dy=by-ay;
@@ -192,10 +164,6 @@ map.style.background=settings.mapColor;
  line.style.top=ay+"px";
  line.style.transform=`rotate(${angle}deg)`;
 
- line.onclick=()=>{
- alert(`${a.name}: ${a.desc}\nTraits: ${a.traits.join(", ")}\n\n${b.name}: ${b.desc}\nTraits: ${b.traits.join(", ")}`);
- };
-
  const label=document.createElement("div");
  label.className="label";
  label.innerText=con.type;
@@ -204,7 +172,6 @@ map.style.background=settings.mapColor;
 
  map.appendChild(line);
  map.appendChild(label);
- }
  });
 
 // nodes
@@ -215,16 +182,16 @@ map.style.background=settings.mapColor;
  node.style.left=c.x+"px";
  node.style.top=c.y+"px";
  node.style.background=c.color;
- node.style.width=settings.size+"px";
- node.style.height=settings.size+"px";
- node.style.lineHeight=settings.size+"px";
+ node.style.width="80px";
+ node.style.height="80px";
+ node.style.lineHeight="80px";
 
  node.onmousedown=(e)=>{
  dragging=true;
 
  function move(ev){
- c.x=ev.pageX-map.offsetLeft-settings.size/2;
- c.y=ev.pageY-map.offsetTop-settings.size/2;
+ c.x=ev.pageX-map.offsetLeft-40;
+ c.y=ev.pageY-map.offsetTop-40;
  renderMap();
  }
 
@@ -236,19 +203,7 @@ map.style.background=settings.mapColor;
 
  node.onclick=()=>{
  if(dragging)return;
- alert(`${c.name}\n\n${c.desc}\n\nTraits: ${c.traits.join(", ")}`);
-
- if(connectionMode){
- if(!selectedChar){selectedChar=c;}
- else{
- const type=prompt("Relationship type or custom")||"Unknown";
- const color=prompt("Line color")||"red";
- data.connections.push({a:selectedChar.id,b:c.id,type,color});
- connectionMode=false;
- selectedChar=null;
- save();
- }
- }
+ alert(`${c.name}\n\n${c.desc}`);
  };
 
  map.appendChild(node);
@@ -257,6 +212,5 @@ map.style.background=settings.mapColor;
 
 render();
 </script>
-
 </body>
 </html>
