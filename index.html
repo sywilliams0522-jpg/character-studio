@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio FINAL PRO</title>
+<title>Character Studio PRO+ FINAL</title>
 <style>
 body{margin:0;font-family:Segoe UI}
 .dark{background:#000;color:#fff}
@@ -13,30 +13,30 @@ header{padding:15px;background:#1b1f3a;color:white;font-size:20px}
 .card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px;color:white}
 button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
 input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
-#map{position:relative;height:500px;background:#111;border-radius:10px;overflow:hidden}
+#map{position:relative;height:500px;border-radius:10px;overflow:hidden}
 .node{position:absolute;padding:6px;border-radius:10px;cursor:grab;user-select:none;text-align:center}
 .line{position:absolute;height:3px;transform-origin:left center}
 .label{position:absolute;font-size:12px}
 </style>
 </head>
 <body class="dark">
-<header>🚀 Character Studio FINAL PRO</header>
+<header>🚀 Character Studio PRO+ FINAL</header>
 <div class="container">
 
 <div class="sidebar">
 <h3>Mode</h3>
 <button onclick="toggleMode()">Toggle Dark / Light</button>
 
-<h3>Settings</h3>
-<label>Character Size</label>
+<h3>Map Color</h3>
+<input type="color" id="mapColor" value="#111">
+<button onclick="applyMapColor()">Apply</button>
+
+<h3>Character Size</h3>
 <input type="range" id="size" min="30" max="150" value="80">
 <button onclick="applySettings()">Apply</button>
 
-<h3>Timeline</h3>
-<input id="time" placeholder="Time">
-<input id="event" placeholder="Event">
-<button onclick="addEvent()">Add Event</button>
-<div id="timeline"></div>
+<h3>All Characters</h3>
+<div id="characterList"></div>
 </div>
 
 <div class="main">
@@ -66,40 +66,38 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 </div>
 
 <script>
-let TRAITS=[
-"Aggressive","Brave","Calm","Caring","Charming","Cold","Confident","Creative","Curious",
-"Determined","Evil","Fearless","Funny","Greedy","Honest","Impulsive","Jealous","Kind",
-"Lazy","Leader","Loyal","Manipulative","Optimistic","Patient","Pessimistic","Reckless",
-"Sarcastic","Selfish","Selfless","Shy","Smart","Strategic","Stubborn","Wise"
-].sort();
+let TRAITS=["Aggressive","Brave","Calm","Caring","Charming","Cold","Confident","Creative","Curious","Determined","Evil","Fearless","Funny","Greedy","Honest","Impulsive","Jealous","Kind","Lazy","Leader","Loyal","Manipulative","Optimistic","Patient","Pessimistic","Reckless","Sarcastic","Selfish","Selfless","Shy","Smart","Strategic","Stubborn","Wise"].sort();
 
-let RELATIONSHIPS=["Friend","Enemy","Sibling","Married","Parent","Child","Rival","Mentor","Student"];
+let RELATIONSHIPS=["Friend","Best Friend","Enemy","Rival","Sibling","Brother","Sister","Married","Dating","Parent","Child","Mentor","Student","Boss","Employee"];
 
-let data=JSON.parse(localStorage.getItem("PRO"))||{
-characters:[],connections:[],timeline:[]
+let data=JSON.parse(localStorage.getItem("PROPLUS"))||{
+characters:[],connections:[]
 };
 
-let settings={size:80};
+let settings={size:80,mapColor:"#111"};
 let tempTraits=[];
 let connectionMode=false;
 let selectedChar=null;
 let dragging=false;
 
-function save(){localStorage.setItem("PRO",JSON.stringify(data));render();}
+function save(){localStorage.setItem("PROPLUS",JSON.stringify(data));render();}
 
 function toggleMode(){
 if(document.body.classList.contains("dark")){
-document.body.classList.remove("dark");
-document.body.classList.add("light");
+document.body.classList.replace("dark","light");
 }else{
-document.body.classList.remove("light");
-document.body.classList.add("dark");
+document.body.classList.replace("light","dark");
 }
 }
 
 function applySettings(){
 settings.size=parseInt(document.getElementById("size").value);
 render();
+}
+
+function applyMapColor(){
+settings.mapColor=document.getElementById("mapColor").value;
+document.getElementById("map").style.background=settings.mapColor;
 }
 
 function filterTraits(){
@@ -151,21 +149,25 @@ selectedChar=null;
 alert("Click 2 characters");
 }
 
-function addEvent(){
-const time=document.getElementById("time").value;
-const event=document.getElementById("event").value;
-data.timeline.push({time,event});
-save();
-}
-
 function render(){
 filterTraits();
+
+// character list
+const list=document.getElementById("characterList");
+list.innerHTML="";
+data.characters.forEach(c=>{
+const div=document.createElement("div");
+div.innerText=c.name;
+list.appendChild(div);
+});
+
 renderMap();
 }
 
 function renderMap(){
 const map=document.getElementById("map");
 map.innerHTML="";
+map.style.background=settings.mapColor;
 
 // connections
  data.connections.forEach(con=>{
@@ -191,7 +193,7 @@ map.innerHTML="";
  line.style.transform=`rotate(${angle}deg)`;
 
  line.onclick=()=>{
- alert(`${a.name}: ${a.desc}\n\n${b.name}: ${b.desc}`);
+ alert(`${a.name}: ${a.desc}\nTraits: ${a.traits.join(", ")}\n\n${b.name}: ${b.desc}\nTraits: ${b.traits.join(", ")}`);
  };
 
  const label=document.createElement("div");
@@ -219,12 +221,10 @@ map.innerHTML="";
 
  node.onmousedown=(e)=>{
  dragging=true;
- const offsetX=e.offsetX;
- const offsetY=e.offsetY;
 
  function move(ev){
- c.x=ev.pageX-map.offsetLeft-offsetX;
- c.y=ev.pageY-map.offsetTop-offsetY;
+ c.x=ev.pageX-map.offsetLeft-settings.size/2;
+ c.y=ev.pageY-map.offsetTop-settings.size/2;
  renderMap();
  }
 
@@ -236,11 +236,13 @@ map.innerHTML="";
 
  node.onclick=()=>{
  if(dragging)return;
+ alert(`${c.name}\n\n${c.desc}\n\nTraits: ${c.traits.join(", ")}`);
+
  if(connectionMode){
  if(!selectedChar){selectedChar=c;}
  else{
- const type=prompt("Relationship type (or custom)")||"Unknown";
- const color=prompt("Color (red, blue, green, etc)")||"red";
+ const type=prompt("Relationship type or custom")||"Unknown";
+ const color=prompt("Line color")||"red";
  data.connections.push({a:selectedChar.id,b:c.id,type,color});
  connectionMode=false;
  selectedChar=null;
