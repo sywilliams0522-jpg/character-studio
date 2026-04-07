@@ -1,42 +1,115 @@
 <!DOCTYPE html>
-
 <html>
 <head>
-  <title>Character Studio Pro</title>
+  <title>Character Studio</title>
   <style>
-    body { font-family: Arial; background:#111; color:white; padding:20px; }
-    input, textarea, select, button { margin:5px; padding:8px; }
-    .card { border:1px solid #444; padding:10px; margin:10px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: #2f2f4f;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    button {
+      background: #6c5ce7;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #a29bfe;
+    }
+
+    .character {
+      background: #3b3b5f;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .row > * {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
 
-<h1>Character Studio Pro</h1>
-<button onclick="toggleDark()">Toggle Dark Mode</button>
+<div class="container">
+  <h1>✨ Character Studio</h1>
 
-<h2>Create Character</h2>
-<input id="name" placeholder="Name">
-<textarea id="desc" placeholder="Description"></textarea>
+  <div class="card">
+    <h2>Create Character</h2>
+    <input id="name" placeholder="Character Name">
+    <textarea id="desc" placeholder="Description"></textarea>
+    <select id="trait">
+      <option value="">Select Trait</option>
+      <option>Brave</option>
+      <option>Shy</option>
+      <option>Smart</option>
+      <option>Chaotic</option>
+    </select>
+    <button onclick="addCharacter()">Add Character</button>
+  </div>
 
-<select id="trait">
-  <option value="">Trait</option>
-</select>
+  <div class="card">
+    <h2>Characters</h2>
+    <div id="list"></div>
+  </div>
 
-<button onclick="addCharacter()">Add</button>
-
-<h2>Characters</h2>
-<div id="characters"></div>
-
-<h2>Timeline</h2>
-<button onclick="addEvent()">Add Event</button>
-<div id="timeline"></div>
+  <div class="card">
+    <h2>Timeline</h2>
+    <div class="row">
+      <input id="time" placeholder="Time / Chapter">
+      <input id="event" placeholder="Event">
+    </div>
+    <button onclick="addEvent()">Add Event</button>
+    <div id="timeline"></div>
+  </div>
+</div>
 
 <script>
 let data = JSON.parse(localStorage.getItem("studio")) || {
   characters: [],
-  timeline: [],
-  traits: ["Brave","Shy","Sarcastic"],
-  relations: ["Friend","Enemy","Sibling"]
+  timeline: []
 };
 
 function save(){
@@ -49,70 +122,40 @@ function addCharacter(){
   const desc = document.getElementById("desc").value;
   const trait = document.getElementById("trait").value;
   if(!name) return;
-  data.characters.push({id:Date.now(),name,desc,trait,links:[]});
+
+  data.characters.push({ id: Date.now(), name, desc, trait });
   save();
 }
 
 function addEvent(){
-  const title = prompt("Event:");
-  const time = prompt("Time:");
-  if(title) data.timeline.push({title,time});
-  save();
-}
+  const time = document.getElementById("time").value;
+  const event = document.getElementById("event").value;
+  if(!event) return;
 
-function link(a,b){
-  const type = prompt("Relationship:");
-  a.links.push({target:b.id,type});
+  data.timeline.push({ time, event });
   save();
 }
 
 function render(){
-  const t = document.getElementById("trait");
-  t.innerHTML = '<option value=\"\">Trait</option>' +
-    data.traits.map(x=>`<option>${x}</option>`).join("");
+  const list = document.getElementById("list");
+  list.innerHTML = "";
 
-  const cDiv = document.getElementById("characters");
-  cDiv.innerHTML="";
-  data.characters.forEach(c=>{
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<b>${c.name}</b><br>${c.desc}<br>${c.trait}`;
-
-    data.characters.forEach(o=>{
-      if(o.id!==c.id){
-        const btn=document.createElement("button");
-        btn.innerText=\"Link to \"+o.name;
-        btn.onclick=()=>link(c,o);
-        div.appendChild(btn);
-      }
-    });
-
-    c.links.forEach(l=>{
-      const target=data.characters.find(x=>x.id===l.target);
-      if(target){
-        const p=document.createElement(\"div\");
-        p.innerText=l.type+\": \"+target.name;
-        div.appendChild(p);
-      }
-    });
-
-    cDiv.appendChild(div);
+  data.characters.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "character";
+    div.innerHTML = `<b>${c.name}</b><br>${c.desc}<br><i>${c.trait}</i>`;
+    list.appendChild(div);
   });
 
-  const tDiv=document.getElementById(\"timeline\");
-  tDiv.innerHTML=\"\";
-  data.timeline.forEach(e=>{
-    const div=document.createElement(\"div\");
-    div.innerText=e.time+\": \"+e.title;
-    tDiv.appendChild(div);
-  });
-}
+  const timeline = document.getElementById("timeline");
+  timeline.innerHTML = "";
 
-function toggleDark(){
-  document.body.style.background =
-    document.body.style.background===\"white\"?\"#111\":\"white\";
-  document.body.style.color =
-    document.body.style.color===\"black\"?\"white\":\"black\";
+  data.timeline.forEach(e => {
+    const div = document.createElement("div");
+    div.className = "character";
+    div.innerText = `${e.time}: ${e.event}`;
+    timeline.appendChild(div);
+  });
 }
 
 render();
@@ -120,3 +163,4 @@ render();
 
 </body>
 </html>
+
