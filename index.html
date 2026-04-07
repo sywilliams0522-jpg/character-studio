@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio RELATION FIX</title>
+<title>Character Studio COMPLETE FIX</title>
 <style>
 body{margin:0;font-family:Segoe UI}
 .dark{background:#000;color:#fff}
@@ -14,18 +14,26 @@ header{padding:15px;background:#1b1f3a;color:white;font-size:20px}
 button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
 input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
 #map{position:relative;height:500px;background:#111;border-radius:10px;overflow:hidden}
-.node{position:absolute;padding:6px;border-radius:10px;cursor:grab;user-select:none;text-align:center}
+.node{position:absolute;border-radius:10px;cursor:grab;user-select:none;text-align:center;color:white}
 .line{position:absolute;height:3px;transform-origin:left center}
-.label{position:absolute;font-size:12px}
-.modal{position:fixed;top:20%;left:35%;background:#222;padding:15px;border-radius:10px;display:none}
 </style>
 </head>
 <body class="dark">
-<header>🚀 Character Studio (RELATION FIXED)</header>
+<header>🚀 Character Studio COMPLETE</header>
 <div class="container">
 
 <div class="sidebar">
 <button onclick="toggleMode()">Toggle Dark/Light</button>
+
+<h3>Character Size</h3>
+<input type="range" id="size" min="20" max="150" value="70" oninput="applySize()">
+
+<h3>Timeline</h3>
+<input id="time" placeholder="Time">
+<input id="event" placeholder="Event">
+<button onclick="addEvent()">Add</button>
+<div id="timeline"></div>
+
 <h3>Characters</h3>
 <div id="charList"></div>
 </div>
@@ -37,6 +45,12 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
 <input type="color" id="color" value="#6c5ce7">
+
+<select id="traitSelect"></select>
+<button onclick="addTrait()">Add Trait</button>
+<button onclick="customTrait()">Custom Trait</button>
+<div id="traitList"></div>
+
 <button onclick="addCharacter()">Create</button>
 </div>
 
@@ -49,76 +63,92 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 </div>
 </div>
 
-<div class="modal" id="relationUI">
-<h3>Create Relationship</h3>
-<label>Character 1</label>
+<div id="relationUI" style="display:none;position:fixed;top:20%;left:30%;background:#222;padding:15px;border-radius:10px">
+<h3>Relationship</h3>
 <select id="charA"></select>
-<label>Character 2</label>
 <select id="charB"></select>
-<label>Type</label>
 <select id="relType"></select>
-<label>Color</label>
 <input type="color" id="relColor" value="#ff0000">
 <button onclick="createRelation()">Create</button>
 <button onclick="closeRelationUI()">Cancel</button>
 </div>
 
 <script>
-let REL_TYPES=["Friend","Enemy","Sibling","Brother","Sister","Married","Dating","Parent","Child","Rival","Mentor","Student"];
+let TRAITS=["Brave","Smart","Funny","Loyal","Evil","Kind","Calm","Aggressive","Leader","Shy","Confident","Lazy","Creative","Curious","Honest","Jealous","Cold","Caring"].sort();
+let REL_TYPES=["Friend","Enemy","Sibling","Married","Parent","Child","Rival","Mentor"];
 
-let data=JSON.parse(localStorage.getItem("REL_FIX"))||{characters:[],connections:[]};
-let dragging=false;
+let data=JSON.parse(localStorage.getItem("FINALAPP"))||{
+characters:[],connections:[],timeline:[]
+};
 
-function save(){localStorage.setItem("REL_FIX",JSON.stringify(data));render();}
+let size=70;
+let tempTraits=[];
 
-function toggleMode(){
-document.body.classList.toggle("dark");
-document.body.classList.toggle("light");
+function save(){localStorage.setItem("FINALAPP",JSON.stringify(data));render();}
+
+function toggleMode(){document.body.classList.toggle("dark");document.body.classList.toggle("light");}
+
+function applySize(){size=parseInt(document.getElementById("size").value);render();}
+
+function addTrait(){
+let t=document.getElementById("traitSelect").value;
+if(!tempTraits.includes(t))tempTraits.push(t);
+renderTraits();
+}
+
+function customTrait(){
+let t=prompt("Trait");
+if(t){TRAITS.push(t);TRAITS.sort();render();}
+}
+
+function renderTraits(){
+let div=document.getElementById("traitList");
+div.innerHTML=tempTraits.join(", ");
 }
 
 function addCharacter(){
-const name=document.getElementById("name").value;
-const desc=document.getElementById("desc").value;
-const color=document.getElementById("color").value;
+let name=document.getElementById("name").value;
+let desc=document.getElementById("desc").value;
+let color=document.getElementById("color").value;
 if(!name)return;
 
-data.characters.push({id:Date.now(),name,desc,color,x:100,y:100});
+data.characters.push({id:Date.now(),name,desc,color,traits:[...tempTraits],x:100,y:100});
+
+tempTraits=[];
+renderTraits();
+save();
+}
+
+function addEvent(){
+let t=document.getElementById("time").value;
+let e=document.getElementById("event").value;
+data.timeline.push({t,e});
 save();
 }
 
 function openRelationUI(){
-const modal=document.getElementById("relationUI");
-modal.style.display="block";
+let ui=document.getElementById("relationUI");
+ui.style.display="block";
 
-const charA=document.getElementById("charA");
-const charB=document.getElementById("charB");
-charA.innerHTML="";
-charB.innerHTML="";
+let a=document.getElementById("charA");
+let b=document.getElementById("charB");
+a.innerHTML=b.innerHTML="";
 
- data.characters.forEach(c=>{
- let o1=document.createElement("option");
- o1.value=c.id;o1.textContent=c.name;
- charA.appendChild(o1);
+data.characters.forEach(c=>{
+let o=document.createElement("option");o.value=c.id;o.text=c.name;a.appendChild(o);
+let o2=document.createElement("option");o2.value=c.id;o2.text=c.name;b.appendChild(o2);
+});
 
- let o2=document.createElement("option");
- o2.value=c.id;o2.textContent=c.name;
- charB.appendChild(o2);
- });
-
-const relType=document.getElementById("relType");
-relType.innerHTML=REL_TYPES.map(r=>`<option>${r}</option>`).join("");
+document.getElementById("relType").innerHTML=REL_TYPES.map(r=>`<option>${r}</option>`);
 }
 
 function closeRelationUI(){document.getElementById("relationUI").style.display="none";}
 
 function createRelation(){
-const a=parseInt(document.getElementById("charA").value);
-const b=parseInt(document.getElementById("charB").value);
-const type=document.getElementById("relType").value;
-const color=document.getElementById("relColor").value;
-
-if(a===b)return alert("Pick 2 different characters");
-
+let a=parseInt(charA.value);
+let b=parseInt(charB.value);
+let type=relType.value;
+let color=relColor.value;
 data.connections.push({a,b,type,color});
 closeRelationUI();
 save();
@@ -126,8 +156,18 @@ save();
 
 function render(){
 
+// traits dropdown
+traitSelect.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
+
+// timeline
+let tDiv=document.getElementById("timeline");
+tDiv.innerHTML="";
+data.timeline.forEach(e=>{
+let d=document.createElement("div");d.innerText=e.t+" - "+e.e;tDiv.appendChild(d);
+});
+
 // list
-const list=document.getElementById("charList");
+let list=document.getElementById("charList");
 list.innerHTML="";
 data.characters.forEach(c=>{
 let d=document.createElement("div");d.innerText=c.name;list.appendChild(d);
@@ -137,26 +177,25 @@ renderMap();
 }
 
 function renderMap(){
-const map=document.getElementById("map");
+let map=document.getElementById("map");
 map.innerHTML="";
 
 // lines
  data.connections.forEach(con=>{
- const a=data.characters.find(x=>x.id===con.a);
- const b=data.characters.find(x=>x.id===con.b);
+ let a=data.characters.find(x=>x.id===con.a);
+ let b=data.characters.find(x=>x.id===con.b);
  if(!a||!b)return;
 
- const ax=a.x+40;
- const ay=a.y+40;
- const bx=b.x+40;
- const by=b.y+40;
+ let ax=a.x+size/2;
+ let ay=a.y+size/2;
+ let bx=b.x+size/2;
+ let by=b.y+size/2;
 
- const dx=bx-ax;
- const dy=by-ay;
- const dist=Math.sqrt(dx*dx+dy*dy);
- const angle=Math.atan2(dy,dx)*180/Math.PI;
+ let dx=bx-ax, dy=by-ay;
+ let dist=Math.sqrt(dx*dx+dy*dy);
+ let angle=Math.atan2(dy,dx)*180/Math.PI;
 
- const line=document.createElement("div");
+ let line=document.createElement("div");
  line.className="line";
  line.style.background=con.color;
  line.style.width=dist+"px";
@@ -164,47 +203,32 @@ map.innerHTML="";
  line.style.top=ay+"px";
  line.style.transform=`rotate(${angle}deg)`;
 
- const label=document.createElement("div");
- label.className="label";
- label.innerText=con.type;
- label.style.left=(ax+bx)/2+"px";
- label.style.top=(ay+by)/2+"px";
-
  map.appendChild(line);
- map.appendChild(label);
  });
 
 // nodes
  data.characters.forEach(c=>{
- const node=document.createElement("div");
+ let node=document.createElement("div");
  node.className="node";
  node.innerText=c.name;
  node.style.left=c.x+"px";
  node.style.top=c.y+"px";
  node.style.background=c.color;
- node.style.width="80px";
- node.style.height="80px";
- node.style.lineHeight="80px";
+ node.style.width=size+"px";
+ node.style.height=size+"px";
+ node.style.lineHeight=size+"px";
 
  node.onmousedown=(e)=>{
- dragging=true;
-
  function move(ev){
- c.x=ev.pageX-map.offsetLeft-40;
- c.y=ev.pageY-map.offsetTop-40;
+ c.x=ev.pageX-map.offsetLeft-size/2;
+ c.y=ev.pageY-map.offsetTop-size/2;
  renderMap();
  }
-
- function up(){dragging=false;document.removeEventListener("mousemove",move);} 
-
  document.addEventListener("mousemove",move);
- document.addEventListener("mouseup",up,{once:true});
+ document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
  };
 
- node.onclick=()=>{
- if(dragging)return;
- alert(`${c.name}\n\n${c.desc}`);
- };
+ node.onclick=()=>alert(`${c.name}\n${c.desc}\nTraits: ${c.traits.join(", ")}`);
 
  map.appendChild(node);
  });
