@@ -1,29 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio PRO</title>
+<title>Character Studio ULTIMATE (Full Working)</title>
 <style>
-body{margin:0;font-family:Segoe UI;background:#0f1220;color:#fff}
+body{margin:0;font-family:Segoe UI;background:#0f1220;color:white}
 header{padding:15px;background:#1b1f3a;font-size:20px}
 .container{display:flex;height:calc(100vh - 60px)}
-.sidebar{width:250px;background:#15182b;padding:10px;overflow:auto}
-.main{flex:1;padding:15px;overflow:auto}
-.card{background:#1e2240;padding:12px;border-radius:12px;margin-bottom:12px}
-button{background:#6c5ce7;color:#fff;border:none;padding:8px;border-radius:8px;margin:3px;cursor:pointer}
-input,textarea,select{width:100%;padding:8px;margin:5px 0;border-radius:8px;border:none}
-.node{position:absolute;padding:6px 10px;border-radius:10px;background:#6c5ce7;color:#fff;cursor:grab}
+.sidebar{width:260px;background:#15182b;padding:10px;overflow:auto}
+.main{flex:1;padding:10px;overflow:auto}
+.card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px}
+button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
+input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
 #map{position:relative;height:400px;background:#111;border-radius:10px;overflow:hidden}
+.node{position:absolute;padding:6px 10px;border-radius:10px;background:#6c5ce7;cursor:grab}
 .line{position:absolute;height:2px;background:#aaa;transform-origin:left center}
 </style>
 </head>
 <body>
-<header>🧠 Character Studio PRO (WORKING VERSION)</header>
+<header>🚀 Character Studio ULTIMATE (Everything Working)</header>
 <div class="container">
 
 <div class="sidebar">
 <h3>Sections</h3>
 <div id="sections"></div>
-<button onclick="addSection()">+ Section</button>
+<button onclick="addSection()">+ Add Section</button>
+
+<h3>Settings</h3>
+<label>Background</label>
+<input type="color" id="bgPicker">
+<label>Node Size</label>
+<input type="range" id="sizePicker" min="40" max="120" value="70">
+<button onclick="applySettings()">Apply Settings</button>
+
+<h3>Timeline</h3>
+<input id="time" placeholder="Time">
+<input id="event" placeholder="Event">
+<button onclick="addEvent()">Add Event</button>
+<div id="timeline"></div>
 </div>
 
 <div class="main">
@@ -35,7 +48,7 @@ input,textarea,select{width:100%;padding:8px;margin:5px 0;border-radius:8px;bord
 <select id="traitSelect"></select>
 <button onclick="addTrait()">Add Trait</button>
 <div id="traitList"></div>
-<button onclick="addCharacter()">Add Character</button>
+<button onclick="addCharacter()">Create Character</button>
 </div>
 
 <div class="card">
@@ -44,7 +57,7 @@ input,textarea,select{width:100%;padding:8px;margin:5px 0;border-radius:8px;bord
 </div>
 
 <div class="card">
-<h3>Map (Drag nodes)</h3>
+<h3>Map (Drag characters)</h3>
 <div id="map"></div>
 </div>
 
@@ -52,15 +65,30 @@ input,textarea,select{width:100%;padding:8px;margin:5px 0;border-radius:8px;bord
 </div>
 
 <script>
-const TRAITS=["Brave","Smart","Funny","Loyal","Evil","Kind","Cold","Hot-headed","Calm","Leader","Shy","Confident"];
+const TRAITS=["Brave","Smart","Funny","Loyal","Evil","Kind","Cold","Hot-headed","Calm","Leader","Shy","Confident","Greedy","Curious","Strategic"];
 
-let data=JSON.parse(localStorage.getItem("pro"))||{
-sections:["Main"],current:"Main",characters:[]
+let data=JSON.parse(localStorage.getItem("ULTIMATE"))||{
+sections:["Main"],current:"Main",characters:[],timeline:[]
+};
+
+let settings=JSON.parse(localStorage.getItem("SETTINGS"))||{
+bg:"#0f1220",nodeSize:70
 };
 
 let tempTraits=[];
 
-function save(){localStorage.setItem("pro",JSON.stringify(data));render();}
+function save(){
+localStorage.setItem("ULTIMATE",JSON.stringify(data));
+localStorage.setItem("SETTINGS",JSON.stringify(settings));
+render();
+}
+
+function applySettings(){
+settings.bg=document.getElementById("bgPicker").value;
+settings.nodeSize=document.getElementById("sizePicker").value;
+document.body.style.background=settings.bg;
+save();
+}
 
 function addSection(){
 const name=prompt("Section name");
@@ -83,7 +111,7 @@ const div=document.getElementById("traitList");
 div.innerHTML="";
 tempTraits.forEach((t,i)=>{
 const span=document.createElement("span");
-span.innerText=t+" ✖";
+span.innerText=t+" ❌ ";
 span.onclick=()=>{tempTraits.splice(i,1);renderTraits();};
 div.appendChild(span);
 });
@@ -95,7 +123,8 @@ const desc=document.getElementById("desc").value;
 if(!name)return;
 
 data.characters.push({
-id:Date.now(),name,desc,traits:[...tempTraits],x:50,y:50,links:[]
+id:Date.now(),name,desc,traits:[...tempTraits],
+x:100,y:100,section:data.current,links:[]
 });
 
 tempTraits=[];
@@ -108,8 +137,16 @@ save();
 }
 
 function link(a,b){
-const type=prompt("Relationship");
+const type=prompt("Relationship (friend, enemy, etc)");
 a.links.push({target:b.id,type});
+save();
+}
+
+function addEvent(){
+const time=document.getElementById("time").value;
+const event=document.getElementById("event").value;
+if(!event)return;
+data.timeline.push({time,event});
 save();
 }
 
@@ -125,33 +162,42 @@ btn.onclick=()=>{data.current=s;save();};
 sDiv.appendChild(btn);
 });
 
-// traits dropdown
+// traits
 const tSel=document.getElementById("traitSelect");
 tSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
 
-// characters list
+// characters
 const cDiv=document.getElementById("characters");
 cDiv.innerHTML="";
-data.characters.forEach(c=>{
+data.characters.filter(c=>c.section===data.current).forEach(c=>{
 const div=document.createElement("div");
-div.innerHTML=`<b>${c.name}</b> (${c.traits.join(", ")})`;
+div.innerHTML=`<b>${c.name}</b><br>${c.desc}<br>${c.traits.join(", ")}`;
 
 const del=document.createElement("button");
 del.innerText="Delete";
 del.onclick=()=>deleteChar(c.id);
 div.appendChild(del);
 
-// linking buttons
+// link buttons
  data.characters.forEach(o=>{
  if(o.id!==c.id){
  const btn=document.createElement("button");
- btn.innerText="Link to "+o.name;
+ btn.innerText="Link → "+o.name;
  btn.onclick=()=>link(c,o);
  div.appendChild(btn);
  }
  });
 
 cDiv.appendChild(div);
+});
+
+// timeline
+const tDiv=document.getElementById("timeline");
+tDiv.innerHTML="";
+data.timeline.forEach(e=>{
+const d=document.createElement("div");
+d.innerText=e.time+": "+e.event;
+tDiv.appendChild(d);
 });
 
 renderMap();
@@ -164,11 +210,11 @@ map.innerHTML="";
 // lines
  data.characters.forEach(c=>{
  c.links.forEach(l=>{
- const target=data.characters.find(x=>x.id===l.target);
- if(target){
+ const t=data.characters.find(x=>x.id===l.target);
+ if(t && c.section===data.current && t.section===data.current){
  const line=document.createElement("div");
- const dx=target.x-c.x;
- const dy=target.y-c.y;
+ const dx=t.x-c.x;
+ const dy=t.y-c.y;
  const dist=Math.sqrt(dx*dx+dy*dy);
  const angle=Math.atan2(dy,dx)*180/Math.PI;
 
@@ -183,12 +229,13 @@ map.innerHTML="";
  });
 
 // nodes
- data.characters.forEach(c=>{
+ data.characters.filter(c=>c.section===data.current).forEach(c=>{
  const node=document.createElement("div");
  node.className="node";
  node.innerText=c.name;
  node.style.left=c.x+"px";
  node.style.top=c.y+"px";
+ node.style.width=settings.nodeSize+"px";
 
  node.onmousedown=(e)=>{
  const offsetX=e.offsetX;
@@ -215,5 +262,6 @@ render();
 
 </body>
 </html>
+
 
 
