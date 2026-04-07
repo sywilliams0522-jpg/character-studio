@@ -2,9 +2,121 @@
 
 <html>
 <head>
-  <title>Character Studio</title>
+  <title>Character Studio Pro</title>
+  <style>
+    body { font-family: Arial; background:#111; color:white; padding:20px; }
+    input, textarea, select, button { margin:5px; padding:8px; }
+    .card { border:1px solid #444; padding:10px; margin:10px; }
+  </style>
 </head>
 <body>
-  <h1>Character Studio is working 🎉</h1>
+
+<h1>Character Studio Pro</h1>
+<button onclick="toggleDark()">Toggle Dark Mode</button>
+
+<h2>Create Character</h2>
+<input id="name" placeholder="Name">
+<textarea id="desc" placeholder="Description"></textarea>
+
+<select id="trait">
+  <option value="">Trait</option>
+</select>
+
+<button onclick="addCharacter()">Add</button>
+
+<h2>Characters</h2>
+<div id="characters"></div>
+
+<h2>Timeline</h2>
+<button onclick="addEvent()">Add Event</button>
+<div id="timeline"></div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("studio")) || {
+  characters: [],
+  timeline: [],
+  traits: ["Brave","Shy","Sarcastic"],
+  relations: ["Friend","Enemy","Sibling"]
+};
+
+function save(){
+  localStorage.setItem("studio", JSON.stringify(data));
+  render();
+}
+
+function addCharacter(){
+  const name = document.getElementById("name").value;
+  const desc = document.getElementById("desc").value;
+  const trait = document.getElementById("trait").value;
+  if(!name) return;
+  data.characters.push({id:Date.now(),name,desc,trait,links:[]});
+  save();
+}
+
+function addEvent(){
+  const title = prompt("Event:");
+  const time = prompt("Time:");
+  if(title) data.timeline.push({title,time});
+  save();
+}
+
+function link(a,b){
+  const type = prompt("Relationship:");
+  a.links.push({target:b.id,type});
+  save();
+}
+
+function render(){
+  const t = document.getElementById("trait");
+  t.innerHTML = '<option value=\"\">Trait</option>' +
+    data.traits.map(x=>`<option>${x}</option>`).join("");
+
+  const cDiv = document.getElementById("characters");
+  cDiv.innerHTML="";
+  data.characters.forEach(c=>{
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`<b>${c.name}</b><br>${c.desc}<br>${c.trait}`;
+
+    data.characters.forEach(o=>{
+      if(o.id!==c.id){
+        const btn=document.createElement("button");
+        btn.innerText=\"Link to \"+o.name;
+        btn.onclick=()=>link(c,o);
+        div.appendChild(btn);
+      }
+    });
+
+    c.links.forEach(l=>{
+      const target=data.characters.find(x=>x.id===l.target);
+      if(target){
+        const p=document.createElement(\"div\");
+        p.innerText=l.type+\": \"+target.name;
+        div.appendChild(p);
+      }
+    });
+
+    cDiv.appendChild(div);
+  });
+
+  const tDiv=document.getElementById(\"timeline\");
+  tDiv.innerHTML=\"\";
+  data.timeline.forEach(e=>{
+    const div=document.createElement(\"div\");
+    div.innerText=e.time+\": \"+e.title;
+    tDiv.appendChild(div);
+  });
+}
+
+function toggleDark(){
+  document.body.style.background =
+    document.body.style.background===\"white\"?\"#111\":\"white\";
+  document.body.style.color =
+    document.body.style.color===\"black\"?\"white\":\"black\";
+}
+
+render();
+</script>
+
 </body>
 </html>
