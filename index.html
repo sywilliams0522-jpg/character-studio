@@ -1,161 +1,203 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Character Studio</title>
+  <title>Character Studio Ultimate</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
+    body{margin:0;font-family:Segoe UI;background:#0f1220;color:#fff}
+    header{padding:15px 20px;background:#1b1f3a;font-size:20px;font-weight:bold}
+    .layout{display:flex;height:calc(100vh - 60px)}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+    /* sidebar */
+    .sidebar{width:220px;background:#15182b;padding:10px;overflow:auto}
+    .sidebar button{width:100%;margin:5px 0}
 
-    .container {
-      max-width: 900px;
-      margin: auto;
-    }
+    /* main */
+    .main{flex:1;padding:15px;overflow:auto}
 
-    .card {
-      background: #2f2f4f;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
+    .card{background:#1e2240;padding:12px;border-radius:12px;margin-bottom:12px}
+    input,textarea,select{width:100%;margin:5px 0;padding:8px;border-radius:8px;border:none}
+    button{background:#6c5ce7;color:#fff;border:none;padding:8px;border-radius:8px;cursor:pointer}
+    button:hover{background:#a29bfe}
 
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      font-size: 14px;
-    }
-
-    button {
-      background: #6c5ce7;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    button:hover {
-      background: #a29bfe;
-    }
-
-    .character {
-      background: #3b3b5f;
-      padding: 10px;
-      border-radius: 10px;
-      margin-top: 10px;
-    }
-
-    .row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .row > * {
-      flex: 1;
-    }
+    .character{background:#2a2f5a;padding:10px;border-radius:10px;margin-top:8px}
+    .tag{display:inline-block;background:#444;margin:2px;padding:3px 6px;border-radius:6px;font-size:12px}
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>✨ Character Studio</h1>
+<header>✨ Character Studio Ultimate</header>
 
-  <div class="card">
-    <h2>Create Character</h2>
-    <input id="name" placeholder="Character Name">
-    <textarea id="desc" placeholder="Description"></textarea>
-    <select id="trait">
-      <option value="">Select Trait</option>
-      <option>Brave</option>
-      <option>Shy</option>
-      <option>Smart</option>
-      <option>Chaotic</option>
-    </select>
-    <button onclick="addCharacter()">Add Character</button>
-  </div>
+<div class="layout">
 
-  <div class="card">
-    <h2>Characters</h2>
-    <div id="list"></div>
-  </div>
+<div class="sidebar">
+  <h3>Sections</h3>
+  <div id="sections"></div>
+  <button onclick="addSection()">+ Section</button>
+</div>
 
-  <div class="card">
-    <h2>Timeline</h2>
-    <div class="row">
-      <input id="time" placeholder="Time / Chapter">
-      <input id="event" placeholder="Event">
-    </div>
-    <button onclick="addEvent()">Add Event</button>
-    <div id="timeline"></div>
-  </div>
+<div class="main">
+
+<div class="card">
+  <h3>Create Character</h3>
+  <input id="name" placeholder="Name">
+  <textarea id="desc" placeholder="Description"></textarea>
+
+  <input id="traitInput" placeholder="Add trait + press Enter">
+  <div id="traitList"></div>
+
+  <button onclick="addCharacter()">Add Character</button>
+</div>
+
+<div class="card">
+  <h3>Characters</h3>
+  <div id="characters"></div>
+</div>
+
+<div class="card">
+  <h3>Timeline</h3>
+  <input id="time" placeholder="Time">
+  <input id="event" placeholder="Event">
+  <button onclick="addEvent()">Add Event</button>
+  <div id="timeline"></div>
+</div>
+
+</div>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("studio")) || {
-  characters: [],
-  timeline: []
+let data = JSON.parse(localStorage.getItem("studioPro")) || {
+  sections:["Main"],
+  currentSection:"Main",
+  characters:[],
+  timeline:[]
 };
 
-function save(){
-  localStorage.setItem("studio", JSON.stringify(data));
-  render();
+let tempTraits = [];
+
+function save(){localStorage.setItem("studioPro",JSON.stringify(data));render();}
+
+// sections
+function addSection(){
+  const name = prompt("Section name");
+  if(!name) return;
+  data.sections.push(name);
+  data.currentSection=name;
+  save();
 }
 
+// traits input
+const traitInput=document.getElementById("traitInput");
+traitInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    e.preventDefault();
+    if(traitInput.value){
+      tempTraits.push(traitInput.value);
+      traitInput.value="";
+      renderTraits();
+    }
+  }
+});
+
+function renderTraits(){
+  const div=document.getElementById("traitList");
+  div.innerHTML="";
+  tempTraits.forEach((t,i)=>{
+    const span=document.createElement("span");
+    span.className="tag";
+    span.innerText=t;
+    span.onclick=()=>{tempTraits.splice(i,1);renderTraits();}
+    div.appendChild(span);
+  });
+}
+
+// character
 function addCharacter(){
-  const name = document.getElementById("name").value;
-  const desc = document.getElementById("desc").value;
-  const trait = document.getElementById("trait").value;
+  const name=document.getElementById("name").value;
+  const desc=document.getElementById("desc").value;
   if(!name) return;
 
-  data.characters.push({ id: Date.now(), name, desc, trait });
+  data.characters.push({
+    id:Date.now(),
+    name,desc,
+    traits:[...tempTraits],
+    section:data.currentSection,
+    links:[]
+  });
+
+  tempTraits=[];
   save();
 }
 
+// linking
+function link(a,b){
+  const type=prompt("Relationship type");
+  a.links.push({target:b.id,type});
+  save();
+}
+
+// timeline
 function addEvent(){
-  const time = document.getElementById("time").value;
-  const event = document.getElementById("event").value;
+  const time=document.getElementById("time").value;
+  const event=document.getElementById("event").value;
   if(!event) return;
-
-  data.timeline.push({ time, event });
+  data.timeline.push({time,event});
   save();
 }
 
+// render
 function render(){
-  const list = document.getElementById("list");
-  list.innerHTML = "";
 
-  data.characters.forEach(c => {
-    const div = document.createElement("div");
-    div.className = "character";
-    div.innerHTML = `<b>${c.name}</b><br>${c.desc}<br><i>${c.trait}</i>`;
-    list.appendChild(div);
+// sections
+const sDiv=document.getElementById("sections");
+sDiv.innerHTML="";
+data.sections.forEach(s=>{
+  const btn=document.createElement("button");
+  btn.innerText=s;
+  btn.onclick=()=>{data.currentSection=s;save();}
+  sDiv.appendChild(btn);
+});
+
+// characters
+const cDiv=document.getElementById("characters");
+cDiv.innerHTML="";
+data.characters.filter(c=>c.section===data.currentSection).forEach(c=>{
+  const div=document.createElement("div");
+  div.className="character";
+
+  let traitsHTML=c.traits.map(t=>`<span class='tag'>${t}</span>`).join("");
+
+  div.innerHTML=`<b>${c.name}</b><br>${c.desc}<br>${traitsHTML}`;
+
+  data.characters.forEach(o=>{
+    if(o.id!==c.id){
+      const btn=document.createElement("button");
+      btn.innerText="Link → "+o.name;
+      btn.onclick=()=>link(c,o);
+      div.appendChild(btn);
+    }
   });
 
-  const timeline = document.getElementById("timeline");
-  timeline.innerHTML = "";
-
-  data.timeline.forEach(e => {
-    const div = document.createElement("div");
-    div.className = "character";
-    div.innerText = `${e.time}: ${e.event}`;
-    timeline.appendChild(div);
+  c.links.forEach(l=>{
+    const target=data.characters.find(x=>x.id===l.target);
+    if(target){
+      const p=document.createElement("div");
+      p.innerText=l.type+": "+target.name;
+      div.appendChild(p);
+    }
   });
+
+  cDiv.appendChild(div);
+});
+
+// timeline
+const tDiv=document.getElementById("timeline");
+tDiv.innerHTML="";
+data.timeline.forEach(e=>{
+  const div=document.createElement("div");
+  div.className="character";
+  div.innerText=e.time+": "+e.event;
+  tDiv.appendChild(div);
+});
 }
 
 render();
