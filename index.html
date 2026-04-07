@@ -1,41 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio COMPLETE FIX</title>
+<title>Character Studio PRO APP</title>
+
 <style>
 body{margin:0;font-family:Segoe UI}
 .dark{background:#000;color:#fff}
 .light{background:#fff;color:#000}
-header{padding:15px;background:#1b1f3a;color:white;font-size:20px}
-.container{display:flex;height:calc(100vh - 60px)}
-.sidebar{width:260px;background:#15182b;padding:10px;overflow:auto;color:white}
-.main{flex:1;padding:10px;overflow:auto}
-.card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px;color:white}
-button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
-input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
-#map{position:relative;height:500px;background:#111;border-radius:10px;overflow:hidden}
-.node{position:absolute;border-radius:10px;cursor:grab;user-select:none;text-align:center;color:white}
+
+header{padding:10px;font-size:18px;text-align:center}
+
+.container{display:flex;height:calc(100vh - 50px)}
+.sidebar{width:260px;padding:10px;border-right:1px solid #444;overflow:auto}
+.main{flex:1;padding:10px}
+
+.card{border:1px solid #444;border-radius:8px;padding:10px;margin-bottom:10px}
+
+button{padding:5px 8px;margin:3px;border:none;border-radius:6px;background:#666;color:white;cursor:pointer}
+input,select,textarea{width:100%;margin:4px 0;padding:5px;border-radius:5px}
+
+#map{height:400px;border:1px solid #444;position:relative;overflow:hidden}
+.node{position:absolute;border-radius:8px;text-align:center;color:white;cursor:grab}
+
 .line{position:absolute;height:3px;transform-origin:left center}
+.timeline{display:flex;overflow-x:auto;gap:10px;padding:5px}
+.event{min-width:120px;border:1px solid #555;padding:5px;border-radius:6px}
 </style>
 </head>
+
 <body class="dark">
-<header>🚀 Character Studio COMPLETE</header>
+
+<header>Character Studio PRO</header>
+
 <div class="container">
 
 <div class="sidebar">
-<button onclick="toggleMode()">Toggle Dark/Light</button>
 
-<h3>Character Size</h3>
-<input type="range" id="size" min="20" max="150" value="70" oninput="applySize()">
+<button onclick="toggleMode()">Dark / Light</button>
+
+<h3>Folder</h3>
+<select id="folderSelect" onchange="changeFolder()"></select>
+<input id="newFolder" placeholder="New folder">
+<button onclick="addFolder()">Add Folder</button>
+
+<h3>Project</h3>
+<select id="projectSelect" onchange="changeProject()"></select>
+<input id="newProject" placeholder="New project">
+<button onclick="addProject()">Add Project</button>
+
+<h3>Characters</h3>
+<div id="charList"></div>
 
 <h3>Timeline</h3>
 <input id="time" placeholder="Time">
 <input id="event" placeholder="Event">
 <button onclick="addEvent()">Add</button>
-<div id="timeline"></div>
 
-<h3>Characters</h3>
-<div id="charList"></div>
 </div>
 
 <div class="main">
@@ -43,55 +63,97 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <div class="card">
 <h3>Create Character</h3>
 <input id="name" placeholder="Name">
-<textarea id="desc" placeholder="Description"></textarea>
+<textarea id="desc"></textarea>
 <input type="color" id="color" value="#6c5ce7">
 
 <select id="traitSelect"></select>
 <button onclick="addTrait()">Add Trait</button>
-<button onclick="customTrait()">Custom Trait</button>
-<div id="traitList"></div>
+<button onclick="customTrait()">+ Custom</button>
 
-<button onclick="addCharacter()">Create</button>
+<div id="traitList"></div>
+<button onclick="createCharacter()">Create</button>
+</div>
+
+<div class="card">
+<h3>Timeline</h3>
+<div id="timeline" class="timeline"></div>
 </div>
 
 <div class="card">
 <h3>Map</h3>
-<button onclick="openRelationUI()">Add Relationship</button>
+<button onclick="openRelation()">Add Relationship</button>
 <div id="map"></div>
 </div>
 
 </div>
 </div>
 
-<div id="relationUI" style="display:none;position:fixed;top:20%;left:30%;background:#222;padding:15px;border-radius:10px">
-<h3>Relationship</h3>
-<select id="charA"></select>
-<select id="charB"></select>
-<select id="relType"></select>
-<input type="color" id="relColor" value="#ff0000">
-<button onclick="createRelation()">Create</button>
-<button onclick="closeRelationUI()">Cancel</button>
+<div id="relUI" style="display:none;position:fixed;top:20%;left:30%;background:#222;padding:10px">
+<select id="rA"></select>
+<select id="rB"></select>
+<select id="rType"></select>
+<input type="color" id="rColor">
+<button onclick="makeRel()">Create</button>
 </div>
 
 <script>
-let TRAITS=["Brave","Smart","Funny","Loyal","Evil","Kind","Calm","Aggressive","Leader","Shy","Confident","Lazy","Creative","Curious","Honest","Jealous","Cold","Caring"].sort();
-let REL_TYPES=["Friend","Enemy","Sibling","Married","Parent","Child","Rival","Mentor"];
 
-let data=JSON.parse(localStorage.getItem("FINALAPP"))||{
-characters:[],connections:[],timeline:[]
-};
+let TRAITS=[
+"Brave","Calm","Angry","Smart","Funny","Loyal","Selfish","Selfless",
+"Leader","Follower","Aggressive","Shy","Confident","Lazy","Energetic",
+"Creative","Logical","Emotional","Cold","Kind","Jealous","Honest",
+"Manipulative","Charming","Strategic","Impulsive","Patient","Reckless"
+].sort();
 
+let REL_TYPES=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
+
+let data=JSON.parse(localStorage.getItem("APP"))||{folders:{}};
+let currentFolder=null;
+let currentProject=null;
 let size=70;
 let tempTraits=[];
 
-function save(){localStorage.setItem("FINALAPP",JSON.stringify(data));render();}
+function save(){localStorage.setItem("APP",JSON.stringify(data));render();}
 
-function toggleMode(){document.body.classList.toggle("dark");document.body.classList.toggle("light");}
+function toggleMode(){
+document.body.classList.toggle("dark");
+document.body.classList.toggle("light");
+}
 
-function applySize(){size=parseInt(document.getElementById("size").value);render();}
+function addFolder(){
+let name=newFolder.value;
+if(!name)return;
+data.folders[name]={projects:{}};
+currentFolder=name;
+save();
+}
+
+function addProject(){
+let name=newProject.value;
+if(!name||!currentFolder)return;
+data.folders[currentFolder].projects[name]={chars:[],rels:[],timeline:[]};
+currentProject=name;
+save();
+}
+
+function changeFolder(){
+currentFolder=folderSelect.value;
+currentProject=null;
+render();
+}
+
+function changeProject(){
+currentProject=projectSelect.value;
+render();
+}
+
+function getProject(){
+if(!currentFolder||!currentProject)return null;
+return data.folders[currentFolder].projects[currentProject];
+}
 
 function addTrait(){
-let t=document.getElementById("traitSelect").value;
+let t=traitSelect.value;
 if(!tempTraits.includes(t))tempTraits.push(t);
 renderTraits();
 }
@@ -102,139 +164,139 @@ if(t){TRAITS.push(t);TRAITS.sort();render();}
 }
 
 function renderTraits(){
-let div=document.getElementById("traitList");
-div.innerHTML=tempTraits.join(", ");
+traitList.innerHTML=tempTraits.map((t,i)=>`${t} ❌`).join("<br>");
 }
 
-function addCharacter(){
-let name=document.getElementById("name").value;
-let desc=document.getElementById("desc").value;
-let color=document.getElementById("color").value;
-if(!name)return;
-
-data.characters.push({id:Date.now(),name,desc,color,traits:[...tempTraits],x:100,y:100});
-
+function createCharacter(){
+let p=getProject(); if(!p)return;
+p.chars.push({id:Date.now(),name:name.value,desc:desc.value,color:color.value,traits:[...tempTraits],x:100,y:100});
 tempTraits=[];
-renderTraits();
+save();
+}
+
+function deleteChar(id){
+let p=getProject();
+p.chars=p.chars.filter(c=>c.id!==id);
+p.rels=p.rels.filter(r=>r.a!==id&&r.b!==id);
 save();
 }
 
 function addEvent(){
-let t=document.getElementById("time").value;
-let e=document.getElementById("event").value;
-data.timeline.push({t,e});
+let p=getProject(); if(!p)return;
+p.timeline.push({t:time.value,e:event.value});
 save();
 }
 
-function openRelationUI(){
-let ui=document.getElementById("relationUI");
-ui.style.display="block";
-
-let a=document.getElementById("charA");
-let b=document.getElementById("charB");
-a.innerHTML=b.innerHTML="";
-
-data.characters.forEach(c=>{
-let o=document.createElement("option");o.value=c.id;o.text=c.name;a.appendChild(o);
-let o2=document.createElement("option");o2.value=c.id;o2.text=c.name;b.appendChild(o2);
-});
-
-document.getElementById("relType").innerHTML=REL_TYPES.map(r=>`<option>${r}</option>`);
+function deleteEvent(i){
+let p=getProject();
+p.timeline.splice(i,1);
+save();
 }
 
-function closeRelationUI(){document.getElementById("relationUI").style.display="none";}
+function openRelation(){
+let p=getProject(); if(!p)return;
+relUI.style.display="block";
 
-function createRelation(){
-let a=parseInt(charA.value);
-let b=parseInt(charB.value);
-let type=relType.value;
-let color=relColor.value;
-data.connections.push({a,b,type,color});
-closeRelationUI();
+rA.innerHTML=p.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
+rB.innerHTML=rA.innerHTML;
+rType.innerHTML=REL_TYPES.map(r=>`<option>${r}</option>`);
+}
+
+function makeRel(){
+let p=getProject();
+p.rels.push({a:+rA.value,b:+rB.value,type:rType.value,color:rColor.value});
+relUI.style.display="none";
+save();
+}
+
+function deleteRel(i){
+let p=getProject();
+p.rels.splice(i,1);
 save();
 }
 
 function render(){
+folderSelect.innerHTML=Object.keys(data.folders).map(f=>`<option>${f}</option>`);
+if(currentFolder){
+projectSelect.innerHTML=Object.keys(data.folders[currentFolder].projects).map(p=>`<option>${p}</option>`);
+}
 
-// traits dropdown
 traitSelect.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-// timeline
-let tDiv=document.getElementById("timeline");
-tDiv.innerHTML="";
-data.timeline.forEach(e=>{
-let d=document.createElement("div");d.innerText=e.t+" - "+e.e;tDiv.appendChild(d);
-});
+let p=getProject();
+if(!p)return;
 
-// list
-let list=document.getElementById("charList");
-list.innerHTML="";
-data.characters.forEach(c=>{
-let d=document.createElement("div");d.innerText=c.name;list.appendChild(d);
-});
+charList.innerHTML=p.chars.map(c=>`
+<div>${c.name} 
+<button onclick="deleteChar(${c.id})">❌</button></div>`).join("");
+
+timeline.innerHTML=p.timeline.map((e,i)=>`
+<div class="event">${e.t}<br>${e.e}
+<button onclick="deleteEvent(${i})">❌</button></div>`).join("");
 
 renderMap();
 }
 
 function renderMap(){
-let map=document.getElementById("map");
+let p=getProject(); if(!p)return;
 map.innerHTML="";
 
 // lines
- data.connections.forEach(con=>{
- let a=data.characters.find(x=>x.id===con.a);
- let b=data.characters.find(x=>x.id===con.b);
- if(!a||!b)return;
+p.rels.forEach((r,i)=>{
+let a=p.chars.find(c=>c.id===r.a);
+let b=p.chars.find(c=>c.id===r.b);
+if(!a||!b)return;
 
- let ax=a.x+size/2;
- let ay=a.y+size/2;
- let bx=b.x+size/2;
- let by=b.y+size/2;
+let ax=a.x+size/2, ay=a.y+size/2;
+let bx=b.x+size/2, by=b.y+size/2;
 
- let dx=bx-ax, dy=by-ay;
- let dist=Math.sqrt(dx*dx+dy*dy);
- let angle=Math.atan2(dy,dx)*180/Math.PI;
+let dx=bx-ax, dy=by-ay;
+let dist=Math.sqrt(dx*dx+dy*dy);
+let angle=Math.atan2(dy,dx)*180/Math.PI;
 
- let line=document.createElement("div");
- line.className="line";
- line.style.background=con.color;
- line.style.width=dist+"px";
- line.style.left=ax+"px";
- line.style.top=ay+"px";
- line.style.transform=`rotate(${angle}deg)`;
+let line=document.createElement("div");
+line.className="line";
+line.style.background=r.color;
+line.style.width=dist+"px";
+line.style.left=ax+"px";
+line.style.top=ay+"px";
+line.style.transform=`rotate(${angle}deg)`;
 
- map.appendChild(line);
- });
+line.onclick=()=>deleteRel(i);
+
+map.appendChild(line);
+});
 
 // nodes
- data.characters.forEach(c=>{
- let node=document.createElement("div");
- node.className="node";
- node.innerText=c.name;
- node.style.left=c.x+"px";
- node.style.top=c.y+"px";
- node.style.background=c.color;
- node.style.width=size+"px";
- node.style.height=size+"px";
- node.style.lineHeight=size+"px";
+p.chars.forEach(c=>{
+let node=document.createElement("div");
+node.className="node";
+node.innerText=c.name;
+node.style.left=c.x+"px";
+node.style.top=c.y+"px";
+node.style.background=c.color;
+node.style.width=size+"px";
+node.style.height=size+"px";
+node.style.lineHeight=size+"px";
 
- node.onmousedown=(e)=>{
- function move(ev){
- c.x=ev.pageX-map.offsetLeft-size/2;
- c.y=ev.pageY-map.offsetTop-size/2;
- renderMap();
- }
- document.addEventListener("mousemove",move);
- document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
- };
+node.onmousedown=e=>{
+function move(ev){
+c.x=ev.pageX-map.offsetLeft-size/2;
+c.y=ev.pageY-map.offsetTop-size/2;
+renderMap();
+}
+document.addEventListener("mousemove",move);
+document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
+};
 
- node.onclick=()=>alert(`${c.name}\n${c.desc}\nTraits: ${c.traits.join(", ")}`);
+node.onclick=()=>alert(`${c.name}\n${c.desc}\nTraits: ${c.traits.join(", ")}`);
 
- map.appendChild(node);
- });
+map.appendChild(node);
+});
 }
 
 render();
+
 </script>
 </body>
 </html>
