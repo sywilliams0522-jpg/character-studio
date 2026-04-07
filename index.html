@@ -1,119 +1,185 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio PRO APP</title>
+<title>Character Studio APP</title>
 
 <style>
 body{margin:0;font-family:Segoe UI}
-.dark{background:#000;color:#fff}
-.light{background:#fff;color:#000}
+.dark{background:#0d0d0d;color:#fff}
+.light{background:#f5f5f5;color:#000}
 
-header{padding:10px;font-size:18px;text-align:center}
+header{
+display:flex;justify-content:space-between;
+padding:10px 15px;border-bottom:1px solid #444
+}
 
 .container{display:flex;height:calc(100vh - 50px)}
-.sidebar{width:260px;padding:10px;border-right:1px solid #444;overflow:auto}
-.main{flex:1;padding:10px}
 
-.card{border:1px solid #444;border-radius:8px;padding:10px;margin-bottom:10px}
+.sidebar{
+width:260px;border-right:1px solid #444;
+padding:10px;overflow:auto
+}
 
-button{padding:5px 8px;margin:3px;border:none;border-radius:6px;background:#666;color:white;cursor:pointer}
-input,select,textarea{width:100%;margin:4px 0;padding:5px;border-radius:5px}
+.main{flex:1;padding:10px;overflow:auto}
 
-#map{height:400px;border:1px solid #444;position:relative;overflow:hidden}
-.node{position:absolute;border-radius:8px;text-align:center;color:white;cursor:grab}
+.card{
+border:1px solid #444;
+border-radius:10px;
+padding:10px;
+margin-bottom:10px
+}
 
-.line{position:absolute;height:3px;transform-origin:left center}
-.timeline{display:flex;overflow-x:auto;gap:10px;padding:5px}
-.event{min-width:120px;border:1px solid #555;padding:5px;border-radius:6px}
+button{
+background:#2d2d2d;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer
+}
+
+button:hover{background:#444}
+
+input,select,textarea{
+width:100%;
+padding:6px;
+margin:5px 0;
+border-radius:6px;
+border:1px solid #444;
+background:#111;color:white
+}
+
+.light input,.light select,.light textarea{
+background:white;color:black
+}
+
+#map{
+height:400px;
+border:1px solid #444;
+position:relative;
+overflow:hidden;
+border-radius:10px
+}
+
+.node{
+position:absolute;
+border-radius:8px;
+text-align:center;
+cursor:grab;
+color:white;
+font-size:12px
+}
+
+.line{
+position:absolute;
+height:3px;
+transform-origin:left center
+}
+
+.timeline{
+display:flex;
+gap:10px;
+overflow-x:auto
+}
+
+.event{
+padding:8px;
+border:1px solid #555;
+border-radius:8px;
+min-width:120px
+}
+
+.icon{margin-right:5px}
 </style>
 </head>
 
 <body class="dark">
 
-<header>Character Studio PRO</header>
+<header>
+<div>📚 Character Studio</div>
+<button onclick="toggleMode()">🌙 Toggle</button>
+</header>
 
 <div class="container">
 
 <div class="sidebar">
 
-<button onclick="toggleMode()">Dark / Light</button>
-
-<h3>Folder</h3>
-<select id="folderSelect" onchange="changeFolder()"></select>
+<h3>📂 Folder</h3>
+<select id="folderSel" onchange="selectFolder()"></select>
 <input id="newFolder" placeholder="New folder">
-<button onclick="addFolder()">Add Folder</button>
+<button onclick="addFolder()">➕ Add</button>
 
-<h3>Project</h3>
-<select id="projectSelect" onchange="changeProject()"></select>
+<h3>📁 Project</h3>
+<select id="projectSel" onchange="selectProject()"></select>
 <input id="newProject" placeholder="New project">
-<button onclick="addProject()">Add Project</button>
+<button onclick="addProject()">➕ Add</button>
 
-<h3>Characters</h3>
+<h3>👥 Characters</h3>
 <div id="charList"></div>
-
-<h3>Timeline</h3>
-<input id="time" placeholder="Time">
-<input id="event" placeholder="Event">
-<button onclick="addEvent()">Add</button>
 
 </div>
 
 <div class="main">
 
 <div class="card">
-<h3>Create Character</h3>
-<input id="name" placeholder="Name">
-<textarea id="desc"></textarea>
-<input type="color" id="color" value="#6c5ce7">
+<h3>➕ Create Character</h3>
 
-<select id="traitSelect"></select>
+<input id="name" placeholder="Name">
+<textarea id="desc" placeholder="Description"></textarea>
+<input type="color" id="color">
+
+<select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
-<button onclick="customTrait()">+ Custom</button>
+<button onclick="addCustomTrait()">+ Custom</button>
 
 <div id="traitList"></div>
-<button onclick="createCharacter()">Create</button>
+
+<button onclick="createChar()">Create</button>
 </div>
 
 <div class="card">
-<h3>Timeline</h3>
+<h3>🕒 Timeline</h3>
+
+<input id="time" placeholder="Time">
+<input id="event" placeholder="Event">
+<button onclick="addEvent()">Add</button>
+
 <div id="timeline" class="timeline"></div>
 </div>
 
 <div class="card">
-<h3>Map</h3>
-<button onclick="openRelation()">Add Relationship</button>
+<h3>🧵 Relationships</h3>
+<button onclick="openRel()">Add Relationship</button>
+</div>
+
+<div class="card">
+<h3>🗺 Map</h3>
 <div id="map"></div>
 </div>
 
 </div>
 </div>
 
-<div id="relUI" style="display:none;position:fixed;top:20%;left:30%;background:#222;padding:10px">
+<div id="relUI" style="display:none;position:fixed;top:25%;left:35%;background:#222;padding:15px;border-radius:10px">
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
 <input type="color" id="rColor">
-<button onclick="makeRel()">Create</button>
+<button onclick="createRel()">Create</button>
 </div>
 
 <script>
 
-let TRAITS=[
-"Brave","Calm","Angry","Smart","Funny","Loyal","Selfish","Selfless",
-"Leader","Follower","Aggressive","Shy","Confident","Lazy","Energetic",
-"Creative","Logical","Emotional","Cold","Kind","Jealous","Honest",
-"Manipulative","Charming","Strategic","Impulsive","Patient","Reckless"
-].sort();
+let TRAITS=["Brave","Smart","Funny","Loyal","Kind","Cold","Angry","Calm","Leader","Shy","Confident","Lazy","Creative","Curious","Honest","Jealous","Manipulative","Charming","Strategic","Impulsive","Patient","Reckless"].sort();
 
-let REL_TYPES=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
+let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
 
-let data=JSON.parse(localStorage.getItem("APP"))||{folders:{}};
-let currentFolder=null;
-let currentProject=null;
-let size=70;
+let data=JSON.parse(localStorage.getItem("APP2"))||{folders:{}};
+let currentFolder=null,currentProject=null;
 let tempTraits=[];
+let size=70;
 
-function save(){localStorage.setItem("APP",JSON.stringify(data));render();}
+function save(){localStorage.setItem("APP2",JSON.stringify(data));render();}
 
 function toggleMode(){
 document.body.classList.toggle("dark");
@@ -129,36 +195,36 @@ save();
 }
 
 function addProject(){
+if(!currentFolder)return;
 let name=newProject.value;
-if(!name||!currentFolder)return;
 data.folders[currentFolder].projects[name]={chars:[],rels:[],timeline:[]};
 currentProject=name;
 save();
 }
 
-function changeFolder(){
-currentFolder=folderSelect.value;
+function selectFolder(){
+currentFolder=folderSel.value;
 currentProject=null;
 render();
 }
 
-function changeProject(){
-currentProject=projectSelect.value;
+function selectProject(){
+currentProject=projectSel.value;
 render();
 }
 
-function getProject(){
+function getP(){
 if(!currentFolder||!currentProject)return null;
 return data.folders[currentFolder].projects[currentProject];
 }
 
 function addTrait(){
-let t=traitSelect.value;
+let t=traitSel.value;
 if(!tempTraits.includes(t))tempTraits.push(t);
 renderTraits();
 }
 
-function customTrait(){
+function addCustomTrait(){
 let t=prompt("Trait");
 if(t){TRAITS.push(t);TRAITS.sort();render();}
 }
@@ -167,85 +233,81 @@ function renderTraits(){
 traitList.innerHTML=tempTraits.map((t,i)=>`${t} ❌`).join("<br>");
 }
 
-function createCharacter(){
-let p=getProject(); if(!p)return;
+function createChar(){
+let p=getP(); if(!p)return alert("Select project first");
 p.chars.push({id:Date.now(),name:name.value,desc:desc.value,color:color.value,traits:[...tempTraits],x:100,y:100});
 tempTraits=[];
 save();
 }
 
 function deleteChar(id){
-let p=getProject();
+let p=getP();
 p.chars=p.chars.filter(c=>c.id!==id);
 p.rels=p.rels.filter(r=>r.a!==id&&r.b!==id);
 save();
 }
 
 function addEvent(){
-let p=getProject(); if(!p)return;
+let p=getP(); if(!p)return;
 p.timeline.push({t:time.value,e:event.value});
 save();
 }
 
 function deleteEvent(i){
-let p=getProject();
-p.timeline.splice(i,1);
+getP().timeline.splice(i,1);
 save();
 }
 
-function openRelation(){
-let p=getProject(); if(!p)return;
+function openRel(){
+let p=getP(); if(!p)return;
+
 relUI.style.display="block";
 
 rA.innerHTML=p.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
 rB.innerHTML=rA.innerHTML;
-rType.innerHTML=REL_TYPES.map(r=>`<option>${r}</option>`);
+rType.innerHTML=REL.map(r=>`<option>${r}</option>`);
 }
 
-function makeRel(){
-let p=getProject();
+function createRel(){
+let p=getP();
 p.rels.push({a:+rA.value,b:+rB.value,type:rType.value,color:rColor.value});
 relUI.style.display="none";
 save();
 }
 
-function deleteRel(i){
-let p=getProject();
-p.rels.splice(i,1);
-save();
-}
-
 function render(){
-folderSelect.innerHTML=Object.keys(data.folders).map(f=>`<option>${f}</option>`);
+
+folderSel.innerHTML=Object.keys(data.folders).map(f=>`<option>${f}</option>`);
+
 if(currentFolder){
-projectSelect.innerHTML=Object.keys(data.folders[currentFolder].projects).map(p=>`<option>${p}</option>`);
+projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects).map(p=>`<option>${p}</option>`);
 }
 
-traitSelect.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
+traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-let p=getProject();
+let p=getP();
 if(!p)return;
 
 charList.innerHTML=p.chars.map(c=>`
-<div>${c.name} 
-<button onclick="deleteChar(${c.id})">❌</button></div>`).join("");
+<div>${c.name}
+<button onclick="deleteChar(${c.id})">❌</button>
+</div>`).join("");
 
 timeline.innerHTML=p.timeline.map((e,i)=>`
 <div class="event">${e.t}<br>${e.e}
-<button onclick="deleteEvent(${i})">❌</button></div>`).join("");
+<button onclick="deleteEvent(${i})">❌</button>
+</div>`).join("");
 
 renderMap();
 }
 
 function renderMap(){
-let p=getProject(); if(!p)return;
+let p=getP(); if(!p)return;
 map.innerHTML="";
 
-// lines
 p.rels.forEach((r,i)=>{
 let a=p.chars.find(c=>c.id===r.a);
 let b=p.chars.find(c=>c.id===r.b);
-if(!a||!b)return;
 
 let ax=a.x+size/2, ay=a.y+size/2;
 let bx=b.x+size/2, by=b.y+size/2;
@@ -262,12 +324,11 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-line.onclick=()=>deleteRel(i);
+line.onclick=()=>{p.rels.splice(i,1);save();};
 
 map.appendChild(line);
 });
 
-// nodes
 p.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
