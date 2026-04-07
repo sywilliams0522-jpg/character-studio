@@ -1,210 +1,219 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Character Studio Ultimate MAX</title>
-  <style>
-    body{margin:0;font-family:Segoe UI;background:#0f1220;color:#fff}
-    header{padding:15px;background:#1b1f3a;font-size:20px;display:flex;justify-content:space-between}
-    .layout{display:flex;height:calc(100vh - 60px)}
-    .sidebar{width:220px;background:#15182b;padding:10px;overflow:auto}
-    .main{flex:1;padding:10px;overflow:auto}
-    .card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px}
-    input,textarea,select{width:100%;margin:5px 0;padding:6px;border-radius:6px;border:none}
-    button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
-    .character{background:#2a2f5a;padding:8px;margin:5px;border-radius:8px}
-    canvas{background:#111;border-radius:10px}
-  </style>
+<title>Character Studio PRO</title>
+<style>
+body{margin:0;font-family:Segoe UI;background:#0f1220;color:#fff}
+header{padding:15px;background:#1b1f3a;font-size:20px}
+.container{display:flex;height:calc(100vh - 60px)}
+.sidebar{width:250px;background:#15182b;padding:10px;overflow:auto}
+.main{flex:1;padding:15px;overflow:auto}
+.card{background:#1e2240;padding:12px;border-radius:12px;margin-bottom:12px}
+button{background:#6c5ce7;color:#fff;border:none;padding:8px;border-radius:8px;margin:3px;cursor:pointer}
+input,textarea,select{width:100%;padding:8px;margin:5px 0;border-radius:8px;border:none}
+.node{position:absolute;padding:6px 10px;border-radius:10px;background:#6c5ce7;color:#fff;cursor:grab}
+#map{position:relative;height:400px;background:#111;border-radius:10px;overflow:hidden}
+.line{position:absolute;height:2px;background:#aaa;transform-origin:left center}
+</style>
 </head>
 <body>
-<header>
-  🚀 Character Studio MAX
-  <div>
-    <button onclick="toggleSettings()">⚙️</button>
-    <button onclick="newProject()">📁 New Project</button>
-    <button onclick="exportData()">⬇ Export</button>
-  </div>
-</header>
+<header>🧠 Character Studio PRO (WORKING VERSION)</header>
+<div class="container">
 
-<div class="layout">
 <div class="sidebar">
-  <h3>Sections</h3>
-  <div id="sections"></div>
-  <button onclick="addSection()">+ Section</button>
+<h3>Sections</h3>
+<div id="sections"></div>
+<button onclick="addSection()">+ Section</button>
 </div>
 
 <div class="main">
 
 <div class="card">
-  <h3>Create Character</h3>
-  <input id="name" placeholder="Name">
-  <textarea id="desc" placeholder="Description"></textarea>
-  <input id="color" type="color" value="#6c5ce7">
-  <button onclick="addCharacter()">Add</button>
+<h3>Create Character</h3>
+<input id="name" placeholder="Name">
+<textarea id="desc" placeholder="Description"></textarea>
+<select id="traitSelect"></select>
+<button onclick="addTrait()">Add Trait</button>
+<div id="traitList"></div>
+<button onclick="addCharacter()">Add Character</button>
 </div>
 
 <div class="card">
-  <h3>Search & Filter</h3>
-  <input id="search" placeholder="Search..." oninput="render()">
+<h3>Characters</h3>
+<div id="characters"></div>
 </div>
 
 <div class="card">
-  <h3>Characters</h3>
-  <div id="characters"></div>
-</div>
-
-<div class="card">
-  <h3>Map</h3>
-  <button onclick="autoLayout()">Auto</button>
-  <button onclick="zoomIn()">+</button>
-  <button onclick="zoomOut()">-</button>
-  <canvas id="map" width="900" height="450"></canvas>
+<h3>Map (Drag nodes)</h3>
+<div id="map"></div>
 </div>
 
 </div>
-</div>
-
-<div id="settings" style="display:none;position:fixed;top:20%;left:30%;background:#222;padding:20px;border-radius:10px">
-  <h3>Settings</h3>
-  <label>BG</label>
-  <input type="color" id="bgColor">
-  <label>Node Size</label>
-  <input type="range" id="nodeSize" min="10" max="50" value="20">
-  <button onclick="applySettings()">Apply</button>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("MAX")) || {sections:["Main"],currentSection:"Main",characters:[]};
-let settings = JSON.parse(localStorage.getItem("SET")) || {bg:"#0f1220",nodeSize:20,zoom:1};
+const TRAITS=["Brave","Smart","Funny","Loyal","Evil","Kind","Cold","Hot-headed","Calm","Leader","Shy","Confident"];
 
-function save(){localStorage.setItem("MAX",JSON.stringify(data));localStorage.setItem("SET",JSON.stringify(settings));render();draw();}
+let data=JSON.parse(localStorage.getItem("pro"))||{
+sections:["Main"],current:"Main",characters:[]
+};
 
-function newProject(){ if(confirm("Clear project?")){localStorage.clear();location.reload();}}
+let tempTraits=[];
 
-function exportData(){
-  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="characters.json";
-  a.click();
-}
-
-function toggleSettings(){
-  const s=document.getElementById("settings");
-  s.style.display=s.style.display==="none"?"block":"none";
-}
-
-function applySettings(){
-  settings.bg=document.getElementById("bgColor").value;
-  settings.nodeSize=parseInt(document.getElementById("nodeSize").value);
-  document.body.style.background=settings.bg;
-  save();
-}
+function save(){localStorage.setItem("pro",JSON.stringify(data));render();}
 
 function addSection(){
-  const s=prompt("Section name");
-  if(!s)return;
-  data.sections.push(s);
-  data.currentSection=s;
-  save();
+const name=prompt("Section name");
+if(!name)return;
+data.sections.push(name);
+data.current=name;
+save();
+}
+
+function addTrait(){
+const val=document.getElementById("traitSelect").value;
+if(val&&!tempTraits.includes(val)){
+tempTraits.push(val);
+renderTraits();
+}
+}
+
+function renderTraits(){
+const div=document.getElementById("traitList");
+div.innerHTML="";
+tempTraits.forEach((t,i)=>{
+const span=document.createElement("span");
+span.innerText=t+" ✖";
+span.onclick=()=>{tempTraits.splice(i,1);renderTraits();};
+div.appendChild(span);
+});
 }
 
 function addCharacter(){
-  const name=document.getElementById("name").value;
-  const desc=document.getElementById("desc").value;
-  const color=document.getElementById("color").value;
-  if(!name)return;
+const name=document.getElementById("name").value;
+const desc=document.getElementById("desc").value;
+if(!name)return;
 
-  data.characters.push({id:Date.now(),name,desc,color,x:Math.random()*800,y:Math.random()*400,section:data.currentSection,links:[]});
-  save();
+data.characters.push({
+id:Date.now(),name,desc,traits:[...tempTraits],x:50,y:50,links:[]
+});
+
+tempTraits=[];
+save();
 }
 
-function deleteChar(id){data.characters=data.characters.filter(c=>c.id!==id);save();}
+function deleteChar(id){
+data.characters=data.characters.filter(c=>c.id!==id);
+save();
+}
 
-function link(a,b){const t=prompt("Relation");a.links.push({target:b.id,type:t});save();}
+function link(a,b){
+const type=prompt("Relationship");
+a.links.push({target:b.id,type});
+save();
+}
 
 function render(){
-  const search=document.getElementById("search").value.toLowerCase();
 
-  const sDiv=document.getElementById("sections");sDiv.innerHTML="";
-  data.sections.forEach(s=>{
-    const btn=document.createElement("button");btn.innerText=s;
-    btn.onclick=()=>{data.currentSection=s;save();};sDiv.appendChild(btn);
-  });
+// sections
+const sDiv=document.getElementById("sections");
+sDiv.innerHTML="";
+data.sections.forEach(s=>{
+const btn=document.createElement("button");
+btn.innerText=s;
+btn.onclick=()=>{data.current=s;save();};
+sDiv.appendChild(btn);
+});
 
-  const cDiv=document.getElementById("characters");cDiv.innerHTML="";
-  data.characters.filter(c=>c.section===data.currentSection && c.name.toLowerCase().includes(search)).forEach(c=>{
-    const div=document.createElement("div");div.className="character";
-    div.innerHTML=`<b>${c.name}</b>`;
+// traits dropdown
+const tSel=document.getElementById("traitSelect");
+tSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
 
-    const del=document.createElement("button");del.innerText="X";del.onclick=()=>deleteChar(c.id);
-    div.appendChild(del);
+// characters list
+const cDiv=document.getElementById("characters");
+cDiv.innerHTML="";
+data.characters.forEach(c=>{
+const div=document.createElement("div");
+div.innerHTML=`<b>${c.name}</b> (${c.traits.join(", ")})`;
 
-    data.characters.forEach(o=>{
-      if(o.id!==c.id){
-        const btn=document.createElement("button");btn.innerText="→"+o.name;
-        btn.onclick=()=>link(c,o);
-        div.appendChild(btn);
-      }
-    });
+const del=document.createElement("button");
+del.innerText="Delete";
+del.onclick=()=>deleteChar(c.id);
+div.appendChild(del);
 
-    cDiv.appendChild(div);
-  });
+// linking buttons
+ data.characters.forEach(o=>{
+ if(o.id!==c.id){
+ const btn=document.createElement("button");
+ btn.innerText="Link to "+o.name;
+ btn.onclick=()=>link(c,o);
+ div.appendChild(btn);
+ }
+ });
+
+cDiv.appendChild(div);
+});
+
+renderMap();
 }
 
-const canvas=document.getElementById("map");
-const ctx=canvas.getContext("2d");
-let dragging=null;
+function renderMap(){
+const map=document.getElementById("map");
+map.innerHTML="";
 
-canvas.onmousedown=e=>{
-  const r=canvas.getBoundingClientRect();
-  const x=(e.clientX-r.left)/settings.zoom;
-  const y=(e.clientY-r.top)/settings.zoom;
-  data.characters.forEach(c=>{if(Math.hypot(c.x-x,c.y-y)<settings.nodeSize){dragging=c}});
-};
-canvas.onmouseup=()=>dragging=null;
-canvas.onmousemove=e=>{
-  if(dragging){
-    const r=canvas.getBoundingClientRect();
-    dragging.x=(e.clientX-r.left)/settings.zoom;
-    dragging.y=(e.clientY-r.top)/settings.zoom;
-    draw();save();
-  }
-};
+// lines
+ data.characters.forEach(c=>{
+ c.links.forEach(l=>{
+ const target=data.characters.find(x=>x.id===l.target);
+ if(target){
+ const line=document.createElement("div");
+ const dx=target.x-c.x;
+ const dy=target.y-c.y;
+ const dist=Math.sqrt(dx*dx+dy*dy);
+ const angle=Math.atan2(dy,dx)*180/Math.PI;
 
-function zoomIn(){settings.zoom+=0.1;draw();}
-function zoomOut(){settings.zoom=Math.max(0.5,settings.zoom-0.1);draw();}
+ line.className="line";
+ line.style.width=dist+"px";
+ line.style.left=c.x+"px";
+ line.style.top=c.y+"px";
+ line.style.transform=`rotate(${angle}deg)`;
+ map.appendChild(line);
+ }
+ });
+ });
 
-function autoLayout(){
-  let angle=0;const r=150,cx=400,cy=200;
-  data.characters.forEach((c,i)=>{
-    angle=(i/data.characters.length)*Math.PI*2;
-    c.x=cx+Math.cos(angle)*r;
-    c.y=cy+Math.sin(angle)*r;
-  });save();
+// nodes
+ data.characters.forEach(c=>{
+ const node=document.createElement("div");
+ node.className="node";
+ node.innerText=c.name;
+ node.style.left=c.x+"px";
+ node.style.top=c.y+"px";
+
+ node.onmousedown=(e)=>{
+ const offsetX=e.offsetX;
+ const offsetY=e.offsetY;
+
+ function move(ev){
+ c.x=ev.pageX-map.offsetLeft-offsetX;
+ c.y=ev.pageY-map.offsetTop-offsetY;
+ renderMap();
+ }
+
+ function up(){document.removeEventListener("mousemove",move);}
+
+ document.addEventListener("mousemove",move);
+ document.addEventListener("mouseup",up,{once:true});
+ };
+
+ map.appendChild(node);
+ });
 }
 
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save();ctx.scale(settings.zoom,settings.zoom);
-
-  data.characters.forEach(c=>{
-    c.links.forEach(l=>{
-      const t=data.characters.find(x=>x.id===l.target);
-      if(t){ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(t.x,t.y);ctx.strokeStyle="#888";ctx.stroke();ctx.fillText(l.type,(c.x+t.x)/2,(c.y+t.y)/2);}    
-    });
-  });
-
-  data.characters.forEach(c=>{
-    ctx.beginPath();ctx.arc(c.x,c.y,settings.nodeSize,0,Math.PI*2);
-    ctx.fillStyle=c.color;ctx.fill();
-    ctx.fillStyle="#fff";ctx.fillText(c.name,c.x-10,c.y+4);
-  });
-
-  ctx.restore();
-}
-
-render();draw();
+render();
 </script>
+
 </body>
 </html>
+
 
