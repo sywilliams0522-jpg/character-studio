@@ -1,34 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Character Studio Ultimate</title>
+  <title>Character Studio Ultimate MAX</title>
   <style>
     body{margin:0;font-family:Segoe UI;background:#0f1220;color:#fff}
-    header{padding:15px 20px;background:#1b1f3a;font-size:20px;font-weight:bold}
+    header{padding:15px;background:#1b1f3a;font-size:20px;display:flex;justify-content:space-between}
     .layout{display:flex;height:calc(100vh - 60px)}
-
-    /* sidebar */
     .sidebar{width:220px;background:#15182b;padding:10px;overflow:auto}
-    .sidebar button{width:100%;margin:5px 0}
-
-    /* main */
-    .main{flex:1;padding:15px;overflow:auto}
-
-    .card{background:#1e2240;padding:12px;border-radius:12px;margin-bottom:12px}
-    input,textarea,select{width:100%;margin:5px 0;padding:8px;border-radius:8px;border:none}
-    button{background:#6c5ce7;color:#fff;border:none;padding:8px;border-radius:8px;cursor:pointer}
-    button:hover{background:#a29bfe}
-
-    .character{background:#2a2f5a;padding:10px;border-radius:10px;margin-top:8px}
-    .tag{display:inline-block;background:#444;margin:2px;padding:3px 6px;border-radius:6px;font-size:12px}
+    .main{flex:1;padding:10px;overflow:auto}
+    .card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px}
+    input,textarea,select{width:100%;margin:5px 0;padding:6px;border-radius:6px;border:none}
+    button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
+    .character{background:#2a2f5a;padding:8px;margin:5px;border-radius:8px}
+    canvas{background:#111;border-radius:10px}
   </style>
 </head>
 <body>
-
-<header>✨ Character Studio Ultimate</header>
+<header>
+  🚀 Character Studio MAX
+  <div>
+    <button onclick="toggleSettings()">⚙️</button>
+    <button onclick="newProject()">📁 New Project</button>
+    <button onclick="exportData()">⬇ Export</button>
+  </div>
+</header>
 
 <div class="layout">
-
 <div class="sidebar">
   <h3>Sections</h3>
   <div id="sections"></div>
@@ -41,11 +38,13 @@
   <h3>Create Character</h3>
   <input id="name" placeholder="Name">
   <textarea id="desc" placeholder="Description"></textarea>
+  <input id="color" type="color" value="#6c5ce7">
+  <button onclick="addCharacter()">Add</button>
+</div>
 
-  <input id="traitInput" placeholder="Add trait + press Enter">
-  <div id="traitList"></div>
-
-  <button onclick="addCharacter()">Add Character</button>
+<div class="card">
+  <h3>Search & Filter</h3>
+  <input id="search" placeholder="Search..." oninput="render()">
 </div>
 
 <div class="card">
@@ -54,155 +53,158 @@
 </div>
 
 <div class="card">
-  <h3>Timeline</h3>
-  <input id="time" placeholder="Time">
-  <input id="event" placeholder="Event">
-  <button onclick="addEvent()">Add Event</button>
-  <div id="timeline"></div>
+  <h3>Map</h3>
+  <button onclick="autoLayout()">Auto</button>
+  <button onclick="zoomIn()">+</button>
+  <button onclick="zoomOut()">-</button>
+  <canvas id="map" width="900" height="450"></canvas>
 </div>
 
 </div>
+</div>
+
+<div id="settings" style="display:none;position:fixed;top:20%;left:30%;background:#222;padding:20px;border-radius:10px">
+  <h3>Settings</h3>
+  <label>BG</label>
+  <input type="color" id="bgColor">
+  <label>Node Size</label>
+  <input type="range" id="nodeSize" min="10" max="50" value="20">
+  <button onclick="applySettings()">Apply</button>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("studioPro")) || {
-  sections:["Main"],
-  currentSection:"Main",
-  characters:[],
-  timeline:[]
-};
+let data = JSON.parse(localStorage.getItem("MAX")) || {sections:["Main"],currentSection:"Main",characters:[]};
+let settings = JSON.parse(localStorage.getItem("SET")) || {bg:"#0f1220",nodeSize:20,zoom:1};
 
-let tempTraits = [];
+function save(){localStorage.setItem("MAX",JSON.stringify(data));localStorage.setItem("SET",JSON.stringify(settings));render();draw();}
 
-function save(){localStorage.setItem("studioPro",JSON.stringify(data));render();}
+function newProject(){ if(confirm("Clear project?")){localStorage.clear();location.reload();}}
 
-// sections
-function addSection(){
-  const name = prompt("Section name");
-  if(!name) return;
-  data.sections.push(name);
-  data.currentSection=name;
+function exportData(){
+  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="characters.json";
+  a.click();
+}
+
+function toggleSettings(){
+  const s=document.getElementById("settings");
+  s.style.display=s.style.display==="none"?"block":"none";
+}
+
+function applySettings(){
+  settings.bg=document.getElementById("bgColor").value;
+  settings.nodeSize=parseInt(document.getElementById("nodeSize").value);
+  document.body.style.background=settings.bg;
   save();
 }
 
-// traits input
-const traitInput=document.getElementById("traitInput");
-traitInput.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    e.preventDefault();
-    if(traitInput.value){
-      tempTraits.push(traitInput.value);
-      traitInput.value="";
-      renderTraits();
-    }
-  }
-});
-
-function renderTraits(){
-  const div=document.getElementById("traitList");
-  div.innerHTML="";
-  tempTraits.forEach((t,i)=>{
-    const span=document.createElement("span");
-    span.className="tag";
-    span.innerText=t;
-    span.onclick=()=>{tempTraits.splice(i,1);renderTraits();}
-    div.appendChild(span);
-  });
+function addSection(){
+  const s=prompt("Section name");
+  if(!s)return;
+  data.sections.push(s);
+  data.currentSection=s;
+  save();
 }
 
-// character
 function addCharacter(){
   const name=document.getElementById("name").value;
   const desc=document.getElementById("desc").value;
-  if(!name) return;
+  const color=document.getElementById("color").value;
+  if(!name)return;
 
-  data.characters.push({
-    id:Date.now(),
-    name,desc,
-    traits:[...tempTraits],
-    section:data.currentSection,
-    links:[]
-  });
-
-  tempTraits=[];
+  data.characters.push({id:Date.now(),name,desc,color,x:Math.random()*800,y:Math.random()*400,section:data.currentSection,links:[]});
   save();
 }
 
-// linking
-function link(a,b){
-  const type=prompt("Relationship type");
-  a.links.push({target:b.id,type});
-  save();
-}
+function deleteChar(id){data.characters=data.characters.filter(c=>c.id!==id);save();}
 
-// timeline
-function addEvent(){
-  const time=document.getElementById("time").value;
-  const event=document.getElementById("event").value;
-  if(!event) return;
-  data.timeline.push({time,event});
-  save();
-}
+function link(a,b){const t=prompt("Relation");a.links.push({target:b.id,type:t});save();}
 
-// render
 function render(){
+  const search=document.getElementById("search").value.toLowerCase();
 
-// sections
-const sDiv=document.getElementById("sections");
-sDiv.innerHTML="";
-data.sections.forEach(s=>{
-  const btn=document.createElement("button");
-  btn.innerText=s;
-  btn.onclick=()=>{data.currentSection=s;save();}
-  sDiv.appendChild(btn);
-});
-
-// characters
-const cDiv=document.getElementById("characters");
-cDiv.innerHTML="";
-data.characters.filter(c=>c.section===data.currentSection).forEach(c=>{
-  const div=document.createElement("div");
-  div.className="character";
-
-  let traitsHTML=c.traits.map(t=>`<span class='tag'>${t}</span>`).join("");
-
-  div.innerHTML=`<b>${c.name}</b><br>${c.desc}<br>${traitsHTML}`;
-
-  data.characters.forEach(o=>{
-    if(o.id!==c.id){
-      const btn=document.createElement("button");
-      btn.innerText="Link → "+o.name;
-      btn.onclick=()=>link(c,o);
-      div.appendChild(btn);
-    }
+  const sDiv=document.getElementById("sections");sDiv.innerHTML="";
+  data.sections.forEach(s=>{
+    const btn=document.createElement("button");btn.innerText=s;
+    btn.onclick=()=>{data.currentSection=s;save();};sDiv.appendChild(btn);
   });
 
-  c.links.forEach(l=>{
-    const target=data.characters.find(x=>x.id===l.target);
-    if(target){
-      const p=document.createElement("div");
-      p.innerText=l.type+": "+target.name;
-      div.appendChild(p);
-    }
+  const cDiv=document.getElementById("characters");cDiv.innerHTML="";
+  data.characters.filter(c=>c.section===data.currentSection && c.name.toLowerCase().includes(search)).forEach(c=>{
+    const div=document.createElement("div");div.className="character";
+    div.innerHTML=`<b>${c.name}</b>`;
+
+    const del=document.createElement("button");del.innerText="X";del.onclick=()=>deleteChar(c.id);
+    div.appendChild(del);
+
+    data.characters.forEach(o=>{
+      if(o.id!==c.id){
+        const btn=document.createElement("button");btn.innerText="→"+o.name;
+        btn.onclick=()=>link(c,o);
+        div.appendChild(btn);
+      }
+    });
+
+    cDiv.appendChild(div);
   });
-
-  cDiv.appendChild(div);
-});
-
-// timeline
-const tDiv=document.getElementById("timeline");
-tDiv.innerHTML="";
-data.timeline.forEach(e=>{
-  const div=document.createElement("div");
-  div.className="character";
-  div.innerText=e.time+": "+e.event;
-  tDiv.appendChild(div);
-});
 }
 
-render();
-</script>
+const canvas=document.getElementById("map");
+const ctx=canvas.getContext("2d");
+let dragging=null;
 
+canvas.onmousedown=e=>{
+  const r=canvas.getBoundingClientRect();
+  const x=(e.clientX-r.left)/settings.zoom;
+  const y=(e.clientY-r.top)/settings.zoom;
+  data.characters.forEach(c=>{if(Math.hypot(c.x-x,c.y-y)<settings.nodeSize){dragging=c}});
+};
+canvas.onmouseup=()=>dragging=null;
+canvas.onmousemove=e=>{
+  if(dragging){
+    const r=canvas.getBoundingClientRect();
+    dragging.x=(e.clientX-r.left)/settings.zoom;
+    dragging.y=(e.clientY-r.top)/settings.zoom;
+    draw();save();
+  }
+};
+
+function zoomIn(){settings.zoom+=0.1;draw();}
+function zoomOut(){settings.zoom=Math.max(0.5,settings.zoom-0.1);draw();}
+
+function autoLayout(){
+  let angle=0;const r=150,cx=400,cy=200;
+  data.characters.forEach((c,i)=>{
+    angle=(i/data.characters.length)*Math.PI*2;
+    c.x=cx+Math.cos(angle)*r;
+    c.y=cy+Math.sin(angle)*r;
+  });save();
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();ctx.scale(settings.zoom,settings.zoom);
+
+  data.characters.forEach(c=>{
+    c.links.forEach(l=>{
+      const t=data.characters.find(x=>x.id===l.target);
+      if(t){ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(t.x,t.y);ctx.strokeStyle="#888";ctx.stroke();ctx.fillText(l.type,(c.x+t.x)/2,(c.y+t.y)/2);}    
+    });
+  });
+
+  data.characters.forEach(c=>{
+    ctx.beginPath();ctx.arc(c.x,c.y,settings.nodeSize,0,Math.PI*2);
+    ctx.fillStyle=c.color;ctx.fill();
+    ctx.fillStyle="#fff";ctx.fillText(c.name,c.x-10,c.y+4);
+  });
+
+  ctx.restore();
+}
+
+render();draw();
+</script>
 </body>
 </html>
 
