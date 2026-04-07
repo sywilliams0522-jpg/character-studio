@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio FINAL (Fixed & Improved)</title>
+<title>Character Studio FINAL FIXED+</title>
 <style>
 body{margin:0;font-family:Segoe UI;background:#0f1220;color:white}
+.dark{background:#0f1220;color:white}
+.light{background:#f5f5f5;color:black}
 header{padding:15px;background:#1b1f3a;font-size:20px}
 .container{display:flex;height:calc(100vh - 60px)}
 .sidebar{width:260px;background:#15182b;padding:10px;overflow:auto}
@@ -11,14 +13,14 @@ header{padding:15px;background:#1b1f3a;font-size:20px}
 .card{background:#1e2240;padding:10px;border-radius:10px;margin-bottom:10px}
 button{background:#6c5ce7;color:white;border:none;padding:6px;border-radius:6px;margin:3px;cursor:pointer}
 input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;border:none}
-#map{position:relative;height:450px;background:#111;border-radius:10px;overflow:hidden}
-.node{position:absolute;padding:8px 12px;border-radius:10px;background:#6c5ce7;cursor:grab;user-select:none}
+#map{position:relative;height:500px;background:#111;border-radius:10px;overflow:hidden}
+.node{position:absolute;padding:10px;border-radius:12px;cursor:grab;user-select:none;text-align:center}
 .line{position:absolute;height:3px;background:red;transform-origin:left center}
-.label{position:absolute;color:white;font-size:12px}
+.label{position:absolute;font-size:12px}
 </style>
 </head>
-<body>
-<header>🚀 Character Studio FINAL (Actually Works)</header>
+<body class="dark">
+<header>🚀 Character Studio FINAL FIXED+</header>
 <div class="container">
 
 <div class="sidebar">
@@ -26,8 +28,10 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <label>Background</label>
 <input type="color" id="bg">
 <label>Character Size</label>
-<input type="range" id="size" min="60" max="160" value="90">
+<input type="range" id="size" min="60" max="200" value="100">
 <button onclick="applySettings()">Apply</button>
+
+<button onclick="toggleMode()">Toggle Dark/Light</button>
 
 <h3>Timeline</h3>
 <input id="time" placeholder="Time">
@@ -42,6 +46,7 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <h3>Create Character</h3>
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
+<input type="color" id="charColor" value="#6c5ce7">
 <select id="traitSelect"></select>
 <button onclick="addTrait()">Add Trait</button>
 <div id="traitList"></div>
@@ -55,7 +60,7 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 
 <div class="card">
 <h3>Map</h3>
-<button onclick="startConnectionMode()">Add Connection Mode</button>
+<button onclick="startConnectionMode()">Add Connection</button>
 <div id="map"></div>
 </div>
 
@@ -65,26 +70,33 @@ input,textarea,select{width:100%;padding:6px;margin:5px 0;border-radius:6px;bord
 <script>
 const TRAITS=[
 "Brave","Smart","Funny","Loyal","Evil","Kind","Cold","Hot-headed","Calm","Leader",
-"Shy","Confident","Greedy","Curious","Strategic","Lazy","Aggressive","Caring",
-"Jealous","Honest","Manipulative","Creative","Fearless","Sarcastic","Stubborn"
+"Shy","Confident","Greedy","Curious","Strategic","Lazy","Aggressive","Caring","Jealous",
+"Honest","Manipulative","Creative","Fearless","Sarcastic","Stubborn","Optimistic","Pessimistic",
+"Impulsive","Wise","Charming","Reckless","Determined","Selfish","Selfless","Patient","Impatient"
 ];
 
-let data=JSON.parse(localStorage.getItem("FINAL"))||{
+let data=JSON.parse(localStorage.getItem("FIXED"))||{
 characters:[],timeline:[],connections:[]
 };
 
-let settings={size:90,bg:"#0f1220"};
+let settings={size:100,bg:"#0f1220"};
 let tempTraits=[];
 let connectionMode=false;
 let selectedChar=null;
+let dragging=false;
 
-function save(){localStorage.setItem("FINAL",JSON.stringify(data));render();}
+function save(){localStorage.setItem("FIXED",JSON.stringify(data));render();}
 
 function applySettings(){
-settings.size=document.getElementById("size").value;
+settings.size=parseInt(document.getElementById("size").value);
 settings.bg=document.getElementById("bg").value;
 document.body.style.background=settings.bg;
 render();
+}
+
+function toggleMode(){
+document.body.classList.toggle("light");
+document.body.classList.toggle("dark");
 }
 
 function addTrait(){
@@ -109,9 +121,10 @@ div.appendChild(span);
 function addCharacter(){
 const name=document.getElementById("name").value;
 const desc=document.getElementById("desc").value;
+const color=document.getElementById("charColor").value;
 if(!name)return;
 
-data.characters.push({id:Date.now(),name,desc,traits:[...tempTraits],x:100,y:100});
+data.characters.push({id:Date.now(),name,desc,color,traits:[...tempTraits],x:120,y:120});
 
 tempTraits=[];
 renderTraits();
@@ -121,7 +134,7 @@ save();
 function startConnectionMode(){
 connectionMode=true;
 selectedChar=null;
-alert("Click first character, then second");
+alert("Click 2 characters to connect them");
 }
 
 function addEvent(){
@@ -137,7 +150,7 @@ function render(){
 const tSel=document.getElementById("traitSelect");
 tSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
 
-// characters
+// characters list
 const cDiv=document.getElementById("characters");
 cDiv.innerHTML="";
 data.characters.forEach(c=>{
@@ -201,27 +214,30 @@ map.innerHTML="";
  node.innerText=c.name;
  node.style.left=c.x+"px";
  node.style.top=c.y+"px";
+ node.style.background=c.color;
  node.style.width=settings.size+"px";
+ node.style.height=settings.size/2+"px";
+ node.style.lineHeight=settings.size/2+"px";
 
  node.onmousedown=(e)=>{
+ dragging=true;
  const offsetX=e.offsetX;
  const offsetY=e.offsetY;
 
  function move(ev){
- c.x=ev.pageX-map.offsetLeft-offsetX;
- c.y=ev.pageY-map.offsetTop-offsetY;
+ c.x=Math.max(0,Math.min(map.clientWidth-100,ev.pageX-map.offsetLeft-offsetX));
+ c.y=Math.max(0,Math.min(map.clientHeight-50,ev.pageY-map.offsetTop-offsetY));
  renderMap();
  }
 
- function up(){
- document.removeEventListener("mousemove",move);
- }
+ function up(){dragging=false;document.removeEventListener("mousemove",move);} 
 
  document.addEventListener("mousemove",move);
  document.addEventListener("mouseup",up,{once:true});
  };
 
  node.onclick=()=>{
+ if(dragging)return;
  if(connectionMode){
  if(!selectedChar){selectedChar=c;}
  else{
