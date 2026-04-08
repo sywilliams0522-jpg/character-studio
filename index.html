@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio PRO FINAL</title>
+<title>Character Studio REAL APP</title>
 
 <style>
 body{margin:0;font-family:Segoe UI}
@@ -25,8 +25,7 @@ padding:10px;overflow:auto
 .card{
 border:1px solid #444;
 border-radius:10px;
-padding:10px;
-margin-bottom:10px
+padding:10px;margin-bottom:10px
 }
 
 button{
@@ -67,6 +66,11 @@ display:flex;gap:10px;overflow-x:auto
 padding:8px;border:1px solid #555;border-radius:8px;
 min-width:120px
 }
+
+.modal{
+position:fixed;top:20%;left:35%;
+background:#222;padding:15px;border-radius:10px
+}
 </style>
 </head>
 
@@ -74,24 +78,24 @@ min-width:120px
 
 <header>
 <div>📚 Character Studio</div>
-<button onclick="toggleMode()">🌙 Toggle</button>
+<button onclick="toggleMode()">🌙</button>
 </header>
 
 <div class="container">
 
 <div class="sidebar">
 
-<h3>📂 Folder</h3>
-<select id="folderSel" onchange="selectFolder()"></select>
-<input id="newFolder" placeholder="New folder">
+<h3>Folder</h3>
+<select id="folderSel"></select>
+<input id="newFolder">
 <button onclick="addFolder()">Add</button>
 
-<h3>📁 Project</h3>
-<select id="projectSel" onchange="selectProject()"></select>
-<input id="newProject" placeholder="New project">
+<h3>Project</h3>
+<select id="projectSel"></select>
+<input id="newProject">
 <button onclick="addProject()">Add</button>
 
-<h3>👥 Characters</h3>
+<h3>Characters</h3>
 <div id="charList"></div>
 
 </div>
@@ -100,14 +104,13 @@ min-width:120px
 
 <div class="card">
 <h3>Create Character</h3>
-
-<input id="name" placeholder="Name">
-<textarea id="desc" placeholder="Description"></textarea>
+<input id="name">
+<textarea id="desc"></textarea>
 <input type="color" id="color" value="#6c5ce7">
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
-<button onclick="addCustomTrait()">+ Custom</button>
+<button onclick="customTrait()">Custom</button>
 
 <div id="traitList"></div>
 
@@ -116,53 +119,53 @@ min-width:120px
 
 <div class="card">
 <h3>Timeline</h3>
-
-<input id="time" placeholder="Year (number)">
-<input id="event" placeholder="Event">
+<input id="time" placeholder="Year">
+<input id="event">
 <button onclick="addEvent()">Add</button>
-
 <div id="timeline" class="timeline"></div>
 </div>
 
 <div class="card">
-<h3>Relationships</h3>
 <button onclick="openRel()">Add Relationship</button>
 </div>
 
 <div class="card">
-<h3>Map</h3>
 <div id="map"></div>
 </div>
 
 </div>
 </div>
 
-<div id="relUI" style="display:none;position:fixed;top:25%;left:35%;background:#222;padding:15px;border-radius:10px">
+<div id="editModal" class="modal" style="display:none">
+<input id="editName">
+<textarea id="editDesc"></textarea>
+<input type="color" id="editColor">
+<div id="editTraits"></div>
+<button onclick="saveEdit()">Save</button>
+</div>
+
+<div id="relUI" class="modal" style="display:none">
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
-<input type="color" id="rColor" value="#ff0000">
+<input type="color" id="rColor">
 <button onclick="createRel()">Create</button>
 </div>
 
 <script>
 
-let TRAITS=[
-"Brave","Smart","Funny","Loyal","Kind","Cold","Angry","Calm","Leader","Shy",
-"Confident","Lazy","Creative","Curious","Honest","Jealous","Manipulative",
-"Charming","Strategic","Impulsive","Patient","Reckless","Optimistic",
-"Pessimistic","Fearless","Caring","Selfish","Selfless"
-].sort();
+let TRAITS=["Brave","Smart","Funny","Loyal","Kind","Cold","Angry","Calm","Leader","Shy","Confident","Lazy","Creative","Curious","Honest","Jealous","Manipulative","Charming","Strategic","Impulsive","Patient","Reckless"];
 
-let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor","Parent","Child"];
+let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
 
-let data=JSON.parse(localStorage.getItem("APP_FINAL"))||{folders:{}};
+let data=JSON.parse(localStorage.getItem("REALAPP"))||{folders:{}};
 let currentFolder=null,currentProject=null;
 let tempTraits=[];
+let editTarget=null;
 let size=70;
 
 function save(){
-localStorage.setItem("APP_FINAL",JSON.stringify(data));
+localStorage.setItem("REALAPP",JSON.stringify(data));
 render();
 }
 
@@ -172,32 +175,23 @@ document.body.classList.toggle("light");
 }
 
 function addFolder(){
-let name=newFolder.value.trim();
-if(!name)return;
-data.folders[name]={projects:{}};
-currentFolder=name;
+let n=newFolder.value;
+if(!n)return;
+data.folders[n]={projects:{}};
+currentFolder=n;
 save();
 }
 
 function addProject(){
-if(!currentFolder)return alert("Select folder");
-let name=newProject.value.trim();
-if(!name)return;
-data.folders[currentFolder].projects[name]={chars:[],rels:[],timeline:[]};
-currentProject=name;
+if(!currentFolder)return;
+let n=newProject.value;
+data.folders[currentFolder].projects[n]={chars:[],rels:[],timeline:[]};
+currentProject=n;
 save();
 }
 
-function selectFolder(){
-currentFolder=folderSel.value;
-currentProject=null;
-render();
-}
-
-function selectProject(){
-currentProject=projectSel.value;
-render();
-}
+folderSel.onchange=()=>{currentFolder=folderSel.value;render();}
+projectSel.onchange=()=>{currentProject=projectSel.value;render();}
 
 function getP(){
 if(!currentFolder||!currentProject)return null;
@@ -210,55 +204,58 @@ if(!tempTraits.includes(t))tempTraits.push(t);
 renderTraits();
 }
 
-function addCustomTrait(){
+function customTrait(){
 let t=prompt("Trait");
-if(t){TRAITS.push(t);TRAITS.sort();render();}
+if(t){TRAITS.push(t);render();}
 }
 
 function renderTraits(){
-traitList.innerHTML=tempTraits.map(t=>`${t} ❌`).join("<br>");
+traitList.innerHTML=tempTraits.join(", ");
 }
 
 function createChar(){
-let p=getP(); 
-if(!p)return alert("Select project first");
-
-let charName=name.value.trim();
-let charDesc=desc.value.trim();
-let charColor=color.value;
-
-if(!charName)return alert("Enter name");
+let p=getP(); if(!p)return alert("Select project");
+if(!name.value)return;
 
 p.chars.push({
 id:Date.now(),
-name:charName,
-desc:charDesc,
-color:charColor,
+name:name.value,
+desc:desc.value,
+color:color.value,
 traits:[...tempTraits],
-x:150,
-y:150
+x:150,y:150
 });
 
 tempTraits=[];
-name.value="";
-desc.value="";
-
+name.value="";desc.value="";
 save();
 }
 
-function deleteChar(id){
-let p=getP();
-p.chars=p.chars.filter(c=>c.id!==id);
-p.rels=p.rels.filter(r=>r.a!==id&&r.b!==id);
+function openEdit(c){
+editTarget=c;
+editName.value=c.name;
+editDesc.value=c.desc;
+editColor.value=c.color;
+editTraits.innerHTML=c.traits.map((t,i)=>`${t} <button onclick="removeTrait(${i})">x</button>`).join("<br>");
+editModal.style.display="block";
+}
+
+function removeTrait(i){
+editTarget.traits.splice(i,1);
+openEdit(editTarget);
+}
+
+function saveEdit(){
+editTarget.name=editName.value;
+editTarget.desc=editDesc.value;
+editTarget.color=editColor.value;
+editModal.style.display="none";
 save();
 }
 
 function addEvent(){
 let p=getP(); if(!p)return;
-let t=parseInt(time.value);
-if(isNaN(t))return alert("Enter number year");
-
-p.timeline.push({t,e:event.value});
+p.timeline.push({t:parseInt(time.value),e:event.value});
 save();
 }
 
@@ -269,7 +266,6 @@ save();
 
 function openRel(){
 let p=getP(); if(!p)return;
-
 relUI.style.display="block";
 
 rA.innerHTML=p.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
@@ -279,12 +275,7 @@ rType.innerHTML=REL.map(r=>`<option>${r}</option>`);
 
 function createRel(){
 let p=getP();
-p.rels.push({
-a:+rA.value,
-b:+rB.value,
-type:rType.value,
-color:rColor.value
-});
+p.rels.push({a:+rA.value,b:+rB.value,type:rType.value,color:rColor.value});
 relUI.style.display="none";
 save();
 }
@@ -292,28 +283,24 @@ save();
 function render(){
 
 folderSel.innerHTML=Object.keys(data.folders).map(f=>`<option>${f}</option>`);
-
 if(currentFolder){
-projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects)
-.map(p=>`<option>${p}</option>`);
+projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects).map(p=>`<option>${p}</option>`);
 }
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-let p=getP();
-if(!p)return;
+let p=getP(); if(!p)return;
 
 charList.innerHTML=p.chars.map(c=>`
-<div>${c.name}
-<button onclick="deleteChar(${c.id})">❌</button>
+<div onclick="openEdit(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+${c.name}
 </div>`).join("");
 
 timeline.innerHTML=p.timeline
 .sort((a,b)=>a.t-b.t)
 .map((e,i)=>`
-<div class="event">
-${e.t}<br>${e.e}
-<button onclick="deleteEvent(${i})">❌</button>
+<div class="event">${e.t}<br>${e.e}
+<button onclick="deleteEvent(${i})">x</button>
 </div>`).join("");
 
 renderMap();
@@ -323,14 +310,12 @@ function renderMap(){
 let p=getP(); if(!p)return;
 map.innerHTML="";
 
-// relationships
 p.rels.forEach((r,i)=>{
 let a=p.chars.find(c=>c.id===r.a);
 let b=p.chars.find(c=>c.id===r.b);
-if(!a||!b)return;
 
-let ax=a.x+size/2, ay=a.y+size/2;
-let bx=b.x+size/2, by=b.y+size/2;
+let ax=a.x+35, ay=a.y+35;
+let bx=b.x+35, by=b.y+35;
 
 let dx=bx-ax, dy=by-ay;
 let dist=Math.sqrt(dx*dx+dy*dy);
@@ -344,15 +329,11 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-line.onclick=()=>{
-p.rels.splice(i,1);
-save();
-};
+line.onclick=()=>{p.rels.splice(i,1);save();};
 
 map.appendChild(line);
 });
 
-// characters
 p.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
@@ -364,35 +345,21 @@ node.style.width=size+"px";
 node.style.height=size+"px";
 node.style.lineHeight=size+"px";
 
-node.onmousedown=function(e){
-
-let offsetX=e.offsetX;
-let offsetY=e.offsetY;
+node.onmousedown=e=>{
+let ox=e.offsetX, oy=e.offsetY;
 
 function move(ev){
-c.x=ev.pageX-map.offsetLeft-offsetX;
-c.y=ev.pageY-map.offsetTop-offsetY;
-
+c.x=ev.pageX-map.offsetLeft-ox;
+c.y=ev.pageY-map.offsetTop-oy;
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
 }
-
-function up(){
-document.removeEventListener("mousemove",move);
-document.removeEventListener("mouseup",up);
-}
-
 document.addEventListener("mousemove",move);
-document.addEventListener("mouseup",up);
-};
-
-node.onclick=()=>{
-alert(`${c.name}\n${c.desc}\nTraits: ${c.traits.join(", ")}`);
+document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
 };
 
 map.appendChild(node);
 });
-
 }
 
 render();
