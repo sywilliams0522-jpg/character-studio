@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio APP</title>
+<title>Character Studio PRO FINAL</title>
 
 <style>
 body{margin:0;font-family:Segoe UI}
@@ -10,7 +10,7 @@ body{margin:0;font-family:Segoe UI}
 
 header{
 display:flex;justify-content:space-between;
-padding:10px 15px;border-bottom:1px solid #444
+padding:10px;border-bottom:1px solid #444
 }
 
 .container{display:flex;height:calc(100vh - 50px)}
@@ -30,22 +30,14 @@ margin-bottom:10px
 }
 
 button{
-background:#2d2d2d;
-color:white;
-border:none;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer
+background:#2d2d2d;color:white;
+border:none;padding:6px;border-radius:6px;cursor:pointer
 }
-
 button:hover{background:#444}
 
 input,select,textarea{
-width:100%;
-padding:6px;
-margin:5px 0;
-border-radius:6px;
-border:1px solid #444;
+width:100%;padding:6px;margin:5px 0;
+border-radius:6px;border:1px solid #444;
 background:#111;color:white
 }
 
@@ -54,42 +46,27 @@ background:white;color:black
 }
 
 #map{
-height:400px;
-border:1px solid #444;
-position:relative;
-overflow:hidden;
-border-radius:10px
+height:400px;border:1px solid #444;
+position:relative;overflow:hidden;border-radius:10px
 }
 
 .node{
-position:absolute;
-border-radius:8px;
-text-align:center;
-cursor:grab;
-color:white;
-font-size:12px
+position:absolute;border-radius:8px;text-align:center;
+cursor:grab;color:white;font-size:12px
 }
 
 .line{
-position:absolute;
-height:3px;
-transform-origin:left center
+position:absolute;height:3px;transform-origin:left center
 }
 
 .timeline{
-display:flex;
-gap:10px;
-overflow-x:auto
+display:flex;gap:10px;overflow-x:auto
 }
 
 .event{
-padding:8px;
-border:1px solid #555;
-border-radius:8px;
+padding:8px;border:1px solid #555;border-radius:8px;
 min-width:120px
 }
-
-.icon{margin-right:5px}
 </style>
 </head>
 
@@ -107,12 +84,12 @@ min-width:120px
 <h3>📂 Folder</h3>
 <select id="folderSel" onchange="selectFolder()"></select>
 <input id="newFolder" placeholder="New folder">
-<button onclick="addFolder()">➕ Add</button>
+<button onclick="addFolder()">Add</button>
 
 <h3>📁 Project</h3>
 <select id="projectSel" onchange="selectProject()"></select>
 <input id="newProject" placeholder="New project">
-<button onclick="addProject()">➕ Add</button>
+<button onclick="addProject()">Add</button>
 
 <h3>👥 Characters</h3>
 <div id="charList"></div>
@@ -122,11 +99,11 @@ min-width:120px
 <div class="main">
 
 <div class="card">
-<h3>➕ Create Character</h3>
+<h3>Create Character</h3>
 
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
-<input type="color" id="color">
+<input type="color" id="color" value="#6c5ce7">
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
@@ -138,9 +115,9 @@ min-width:120px
 </div>
 
 <div class="card">
-<h3>🕒 Timeline</h3>
+<h3>Timeline</h3>
 
-<input id="time" placeholder="Time">
+<input id="time" placeholder="Year (number)">
 <input id="event" placeholder="Event">
 <button onclick="addEvent()">Add</button>
 
@@ -148,12 +125,12 @@ min-width:120px
 </div>
 
 <div class="card">
-<h3>🧵 Relationships</h3>
+<h3>Relationships</h3>
 <button onclick="openRel()">Add Relationship</button>
 </div>
 
 <div class="card">
-<h3>🗺 Map</h3>
+<h3>Map</h3>
 <div id="map"></div>
 </div>
 
@@ -164,22 +141,30 @@ min-width:120px
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
-<input type="color" id="rColor">
+<input type="color" id="rColor" value="#ff0000">
 <button onclick="createRel()">Create</button>
 </div>
 
 <script>
 
-let TRAITS=["Brave","Smart","Funny","Loyal","Kind","Cold","Angry","Calm","Leader","Shy","Confident","Lazy","Creative","Curious","Honest","Jealous","Manipulative","Charming","Strategic","Impulsive","Patient","Reckless"].sort();
+let TRAITS=[
+"Brave","Smart","Funny","Loyal","Kind","Cold","Angry","Calm","Leader","Shy",
+"Confident","Lazy","Creative","Curious","Honest","Jealous","Manipulative",
+"Charming","Strategic","Impulsive","Patient","Reckless","Optimistic",
+"Pessimistic","Fearless","Caring","Selfish","Selfless"
+].sort();
 
-let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
+let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor","Parent","Child"];
 
-let data=JSON.parse(localStorage.getItem("APP2"))||{folders:{}};
+let data=JSON.parse(localStorage.getItem("APP_FINAL"))||{folders:{}};
 let currentFolder=null,currentProject=null;
 let tempTraits=[];
 let size=70;
 
-function save(){localStorage.setItem("APP2",JSON.stringify(data));render();}
+function save(){
+localStorage.setItem("APP_FINAL",JSON.stringify(data));
+render();
+}
 
 function toggleMode(){
 document.body.classList.toggle("dark");
@@ -187,7 +172,7 @@ document.body.classList.toggle("light");
 }
 
 function addFolder(){
-let name=newFolder.value;
+let name=newFolder.value.trim();
 if(!name)return;
 data.folders[name]={projects:{}};
 currentFolder=name;
@@ -195,8 +180,9 @@ save();
 }
 
 function addProject(){
-if(!currentFolder)return;
-let name=newProject.value;
+if(!currentFolder)return alert("Select folder");
+let name=newProject.value.trim();
+if(!name)return;
 data.folders[currentFolder].projects[name]={chars:[],rels:[],timeline:[]};
 currentProject=name;
 save();
@@ -230,13 +216,33 @@ if(t){TRAITS.push(t);TRAITS.sort();render();}
 }
 
 function renderTraits(){
-traitList.innerHTML=tempTraits.map((t,i)=>`${t} ❌`).join("<br>");
+traitList.innerHTML=tempTraits.map(t=>`${t} ❌`).join("<br>");
 }
 
 function createChar(){
-let p=getP(); if(!p)return alert("Select project first");
-p.chars.push({id:Date.now(),name:name.value,desc:desc.value,color:color.value,traits:[...tempTraits],x:100,y:100});
+let p=getP(); 
+if(!p)return alert("Select project first");
+
+let charName=name.value.trim();
+let charDesc=desc.value.trim();
+let charColor=color.value;
+
+if(!charName)return alert("Enter name");
+
+p.chars.push({
+id:Date.now(),
+name:charName,
+desc:charDesc,
+color:charColor,
+traits:[...tempTraits],
+x:150,
+y:150
+});
+
 tempTraits=[];
+name.value="";
+desc.value="";
+
 save();
 }
 
@@ -249,7 +255,10 @@ save();
 
 function addEvent(){
 let p=getP(); if(!p)return;
-p.timeline.push({t:time.value,e:event.value});
+let t=parseInt(time.value);
+if(isNaN(t))return alert("Enter number year");
+
+p.timeline.push({t,e:event.value});
 save();
 }
 
@@ -270,7 +279,12 @@ rType.innerHTML=REL.map(r=>`<option>${r}</option>`);
 
 function createRel(){
 let p=getP();
-p.rels.push({a:+rA.value,b:+rB.value,type:rType.value,color:rColor.value});
+p.rels.push({
+a:+rA.value,
+b:+rB.value,
+type:rType.value,
+color:rColor.value
+});
 relUI.style.display="none";
 save();
 }
@@ -280,7 +294,8 @@ function render(){
 folderSel.innerHTML=Object.keys(data.folders).map(f=>`<option>${f}</option>`);
 
 if(currentFolder){
-projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects).map(p=>`<option>${p}</option>`);
+projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects)
+.map(p=>`<option>${p}</option>`);
 }
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
@@ -293,8 +308,11 @@ charList.innerHTML=p.chars.map(c=>`
 <button onclick="deleteChar(${c.id})">❌</button>
 </div>`).join("");
 
-timeline.innerHTML=p.timeline.map((e,i)=>`
-<div class="event">${e.t}<br>${e.e}
+timeline.innerHTML=p.timeline
+.sort((a,b)=>a.t-b.t)
+.map((e,i)=>`
+<div class="event">
+${e.t}<br>${e.e}
 <button onclick="deleteEvent(${i})">❌</button>
 </div>`).join("");
 
@@ -305,9 +323,11 @@ function renderMap(){
 let p=getP(); if(!p)return;
 map.innerHTML="";
 
+// relationships
 p.rels.forEach((r,i)=>{
 let a=p.chars.find(c=>c.id===r.a);
 let b=p.chars.find(c=>c.id===r.b);
+if(!a||!b)return;
 
 let ax=a.x+size/2, ay=a.y+size/2;
 let bx=b.x+size/2, by=b.y+size/2;
@@ -324,11 +344,15 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-line.onclick=()=>{p.rels.splice(i,1);save();};
+line.onclick=()=>{
+p.rels.splice(i,1);
+save();
+};
 
 map.appendChild(line);
 });
 
+// characters
 p.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
@@ -340,20 +364,35 @@ node.style.width=size+"px";
 node.style.height=size+"px";
 node.style.lineHeight=size+"px";
 
-node.onmousedown=e=>{
+node.onmousedown=function(e){
+
+let offsetX=e.offsetX;
+let offsetY=e.offsetY;
+
 function move(ev){
-c.x=ev.pageX-map.offsetLeft-size/2;
-c.y=ev.pageY-map.offsetTop-size/2;
-renderMap();
+c.x=ev.pageX-map.offsetLeft-offsetX;
+c.y=ev.pageY-map.offsetTop-offsetY;
+
+node.style.left=c.x+"px";
+node.style.top=c.y+"px";
 }
+
+function up(){
+document.removeEventListener("mousemove",move);
+document.removeEventListener("mouseup",up);
+}
+
 document.addEventListener("mousemove",move);
-document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
+document.addEventListener("mouseup",up);
 };
 
-node.onclick=()=>alert(`${c.name}\n${c.desc}\nTraits: ${c.traits.join(", ")}`);
+node.onclick=()=>{
+alert(`${c.name}\n${c.desc}\nTraits: ${c.traits.join(", ")}`);
+};
 
 map.appendChild(node);
 });
+
 }
 
 render();
