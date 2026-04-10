@@ -1,76 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio REAL APP</title>
+<title>📚 Character Studio</title>
 
 <style>
 body{margin:0;font-family:Segoe UI}
 .dark{background:#0d0d0d;color:#fff}
-.light{background:#f5f5f5;color:#000}
-
-header{
-display:flex;justify-content:space-between;
-padding:10px;border-bottom:1px solid #444
-}
-
+header{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #444}
 .container{display:flex;height:calc(100vh - 50px)}
+.sidebar{width:260px;border-right:1px solid #444;padding:10px}
+.main{flex:1;padding:10px}
 
-.sidebar{
-width:260px;border-right:1px solid #444;
-padding:10px;overflow:auto
-}
+.card{border:1px solid #444;border-radius:10px;padding:10px;margin-bottom:10px}
 
-.main{flex:1;padding:10px;overflow:auto}
+button{background:#2d2d2d;color:white;border:none;padding:6px;border-radius:6px;cursor:pointer}
+input,select,textarea{width:100%;margin:5px 0;padding:5px;border-radius:6px;border:1px solid #444;background:#111;color:white}
 
-.card{
-border:1px solid #444;
-border-radius:10px;
-padding:10px;margin-bottom:10px
-}
+#map{height:400px;border:1px solid #444;position:relative;border-radius:10px}
+.node{position:absolute;border-radius:8px;text-align:center;color:white;cursor:grab;font-size:12px}
+.line{position:absolute;height:3px;transform-origin:left center}
 
-button{
-background:#2d2d2d;color:white;
-border:none;padding:6px;border-radius:6px;cursor:pointer
-}
-button:hover{background:#444}
+.timeline{display:flex;gap:10px;overflow-x:auto}
+.event{border:1px solid #555;padding:8px;border-radius:8px;min-width:120px}
 
-input,select,textarea{
-width:100%;padding:6px;margin:5px 0;
-border-radius:6px;border:1px solid #444;
-background:#111;color:white
-}
-
-.light input,.light select,.light textarea{
-background:white;color:black
-}
-
-#map{
-height:400px;border:1px solid #444;
-position:relative;overflow:hidden;border-radius:10px
-}
-
-.node{
-position:absolute;border-radius:8px;text-align:center;
-cursor:grab;color:white;font-size:12px
-}
-
-.line{
-position:absolute;height:3px;transform-origin:left center
-}
-
-.timeline{
-display:flex;gap:10px;overflow-x:auto
-}
-
-.event{
-padding:8px;border:1px solid #555;border-radius:8px;
-min-width:120px
-}
-
-.modal{
-position:fixed;top:20%;left:35%;
-background:#222;padding:15px;border-radius:10px
-}
+.modal{position:fixed;top:25%;left:35%;background:#222;padding:15px;border-radius:10px}
 </style>
 </head>
 
@@ -85,17 +38,17 @@ background:#222;padding:15px;border-radius:10px
 
 <div class="sidebar">
 
-<h3>Folder</h3>
+<h3>📂 Folder</h3>
 <select id="folderSel"></select>
 <input id="newFolder">
-<button onclick="addFolder()">Add</button>
+<button onclick="addFolder()">➕</button>
 
-<h3>Project</h3>
+<h3>📁 Project</h3>
 <select id="projectSel"></select>
 <input id="newProject">
-<button onclick="addProject()">Add</button>
+<button onclick="addProject()">➕</button>
 
-<h3>Characters</h3>
+<h3>👥 Characters</h3>
 <div id="charList"></div>
 
 </div>
@@ -103,14 +56,13 @@ background:#222;padding:15px;border-radius:10px
 <div class="main">
 
 <div class="card">
-<h3>Create Character</h3>
-<input id="name">
-<textarea id="desc"></textarea>
+<h3>➕ Create Character</h3>
+<input id="name" placeholder="Name">
+<textarea id="desc" placeholder="Description"></textarea>
 <input type="color" id="color" value="#6c5ce7">
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
-<button onclick="customTrait()">Custom</button>
 
 <div id="traitList"></div>
 
@@ -118,15 +70,16 @@ background:#222;padding:15px;border-radius:10px
 </div>
 
 <div class="card">
-<h3>Timeline</h3>
+<h3>🕒 Timeline</h3>
 <input id="time" placeholder="Year">
-<input id="event">
+<input id="eventInput" placeholder="Event">
 <button onclick="addEvent()">Add</button>
+
 <div id="timeline" class="timeline"></div>
 </div>
 
 <div class="card">
-<button onclick="openRel()">Add Relationship</button>
+<button onclick="openRel()">🧵 Add Relationship</button>
 </div>
 
 <div class="card">
@@ -139,7 +92,6 @@ background:#222;padding:15px;border-radius:10px
 <div id="editModal" class="modal" style="display:none">
 <input id="editName">
 <textarea id="editDesc"></textarea>
-<input type="color" id="editColor">
 <div id="editTraits"></div>
 <button onclick="saveEdit()">Save</button>
 </div>
@@ -154,72 +106,63 @@ background:#222;padding:15px;border-radius:10px
 
 <script>
 
-let TRAITS=["Brave","Smart","Funny","Loyal","Kind","Cold","Angry","Calm","Leader","Shy","Confident","Lazy","Creative","Curious","Honest","Jealous","Manipulative","Charming","Strategic","Impulsive","Patient","Reckless"];
+let TRAITS=[
+"Aggressive","Brave","Calm","Charming","Cold","Confident","Creative","Curious",
+"Funny","Honest","Impulsive","Jealous","Kind","Lazy","Leader","Loyal",
+"Manipulative","Patient","Reckless","Selfish","Smart","Strategic"
+].sort();
 
 let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
 
-let data=JSON.parse(localStorage.getItem("REALAPP"))||{folders:{}};
+let data={folders:{}};
 let currentFolder=null,currentProject=null;
 let tempTraits=[];
 let editTarget=null;
-let size=70;
-
-function save(){
-localStorage.setItem("REALAPP",JSON.stringify(data));
-render();
-}
 
 function toggleMode(){
 document.body.classList.toggle("dark");
-document.body.classList.toggle("light");
 }
 
 function addFolder(){
-let n=newFolder.value;
+let n=newFolder.value.trim();
 if(!n)return;
 data.folders[n]={projects:{}};
 currentFolder=n;
-save();
+render();
 }
 
 function addProject(){
 if(!currentFolder)return;
-let n=newProject.value;
+let n=newProject.value.trim();
+if(!n)return;
 data.folders[currentFolder].projects[n]={chars:[],rels:[],timeline:[]};
 currentProject=n;
-save();
+render();
 }
 
 folderSel.onchange=()=>{currentFolder=folderSel.value;render();}
 projectSel.onchange=()=>{currentProject=projectSel.value;render();}
 
 function getP(){
-if(!currentFolder||!currentProject)return null;
-return data.folders[currentFolder].projects[currentProject];
+return data.folders[currentFolder]?.projects[currentProject];
 }
 
 function addTrait(){
 let t=traitSel.value;
 if(!tempTraits.includes(t))tempTraits.push(t);
-renderTraits();
-}
-
-function customTrait(){
-let t=prompt("Trait");
-if(t){TRAITS.push(t);render();}
-}
-
-function renderTraits(){
 traitList.innerHTML=tempTraits.join(", ");
 }
 
 function createChar(){
-let p=getP(); if(!p)return alert("Select project");
-if(!name.value)return;
+let p=getP();
+if(!p)return alert("Select project");
+
+let charName=name.value.trim();
+if(!charName)return alert("Enter name");
 
 p.chars.push({
 id:Date.now(),
-name:name.value,
+name:charName,
 desc:desc.value,
 color:color.value,
 traits:[...tempTraits],
@@ -228,46 +171,45 @@ x:150,y:150
 
 tempTraits=[];
 name.value="";desc.value="";
-save();
+render();
 }
 
 function openEdit(c){
 editTarget=c;
 editName.value=c.name;
 editDesc.value=c.desc;
-editColor.value=c.color;
-editTraits.innerHTML=c.traits.map((t,i)=>`${t} <button onclick="removeTrait(${i})">x</button>`).join("<br>");
+editTraits.innerHTML=c.traits.map((t,i)=>`${t} ❌`).join("<br>");
 editModal.style.display="block";
-}
-
-function removeTrait(i){
-editTarget.traits.splice(i,1);
-openEdit(editTarget);
 }
 
 function saveEdit(){
 editTarget.name=editName.value;
 editTarget.desc=editDesc.value;
-editTarget.color=editColor.value;
 editModal.style.display="none";
-save();
+render();
 }
 
 function addEvent(){
 let p=getP(); if(!p)return;
-p.timeline.push({t:parseInt(time.value),e:event.value});
-save();
+
+let t=parseInt(time.value);
+let e=eventInput.value;
+
+if(!e)return;
+
+p.timeline.push({t,e});
+render();
 }
 
 function deleteEvent(i){
 getP().timeline.splice(i,1);
-save();
+render();
 }
 
 function openRel(){
 let p=getP(); if(!p)return;
-relUI.style.display="block";
 
+relUI.style.display="block";
 rA.innerHTML=p.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
 rB.innerHTML=rA.innerHTML;
 rType.innerHTML=REL.map(r=>`<option>${r}</option>`);
@@ -277,7 +219,7 @@ function createRel(){
 let p=getP();
 p.rels.push({a:+rA.value,b:+rB.value,type:rType.value,color:rColor.value});
 relUI.style.display="none";
-save();
+render();
 }
 
 function render(){
@@ -289,18 +231,18 @@ projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects).map(p=>`<
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-let p=getP(); if(!p)return;
+let p=getP();
+if(!p)return;
 
 charList.innerHTML=p.chars.map(c=>`
-<div onclick="openEdit(${JSON.stringify(c).replace(/"/g,'&quot;')})">
-${c.name}
-</div>`).join("");
+<div onclick='openEdit(${JSON.stringify(c)})'>${c.name}</div>
+`).join("");
 
 timeline.innerHTML=p.timeline
 .sort((a,b)=>a.t-b.t)
 .map((e,i)=>`
-<div class="event">${e.t}<br>${e.e}
-<button onclick="deleteEvent(${i})">x</button>
+<div class="event">${e.t || ""}<br>${e.e}
+<button onclick="deleteEvent(${i})">❌</button>
 </div>`).join("");
 
 renderMap();
@@ -313,6 +255,7 @@ map.innerHTML="";
 p.rels.forEach((r,i)=>{
 let a=p.chars.find(c=>c.id===r.a);
 let b=p.chars.find(c=>c.id===r.b);
+if(!a||!b)return;
 
 let ax=a.x+35, ay=a.y+35;
 let bx=b.x+35, by=b.y+35;
@@ -329,7 +272,7 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-line.onclick=()=>{p.rels.splice(i,1);save();};
+line.onclick=()=>{p.rels.splice(i,1);render();};
 
 map.appendChild(line);
 });
@@ -341,9 +284,9 @@ node.innerText=c.name;
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
 node.style.background=c.color;
-node.style.width=size+"px";
-node.style.height=size+"px";
-node.style.lineHeight=size+"px";
+node.style.width="70px";
+node.style.height="70px";
+node.style.lineHeight="70px";
 
 node.onmousedown=e=>{
 let ox=e.offsetX, oy=e.offsetY;
@@ -354,6 +297,7 @@ c.y=ev.pageY-map.offsetTop-oy;
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
 }
+
 document.addEventListener("mousemove",move);
 document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
 };
