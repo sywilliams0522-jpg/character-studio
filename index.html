@@ -8,14 +8,12 @@ body{margin:0;font-family:Segoe UI;background:#0d0d0d;color:white}
 header{padding:10px;border-bottom:1px solid #444;font-size:20px}
 
 .container{display:flex;height:calc(100vh - 50px)}
-.sidebar{width:250px;border-right:1px solid #444;padding:10px;overflow:auto}
-.main{flex:1;padding:10px;overflow:auto}
+.sidebar{width:250px;border-right:1px solid #444;padding:10px}
+.main{flex:1;padding:10px}
 
 .card{border:1px solid #444;border-radius:10px;padding:10px;margin-bottom:10px}
 
 button{background:#2d2d2d;color:white;border:none;padding:6px;border-radius:6px;cursor:pointer}
-button:hover{background:#444}
-
 input,select,textarea{
 width:100%;margin:5px 0;padding:5px;border-radius:6px;
 border:1px solid #444;background:#111;color:white
@@ -28,10 +26,7 @@ border:1px solid #444;background:#111;color:white
 .timeline{display:flex;gap:10px;overflow-x:auto}
 .event{border:1px solid #555;padding:8px;border-radius:8px;min-width:120px}
 
-.modal{
-position:fixed;top:25%;left:35%;
-background:#222;padding:15px;border-radius:10px
-}
+.modal{position:fixed;top:25%;left:35%;background:#222;padding:15px;border-radius:10px}
 </style>
 </head>
 
@@ -42,10 +37,8 @@ background:#222;padding:15px;border-radius:10px
 <div class="container">
 
 <div class="sidebar">
-
 <h3>👥 Characters</h3>
 <div id="charList"></div>
-
 </div>
 
 <div class="main">
@@ -53,9 +46,9 @@ background:#222;padding:15px;border-radius:10px
 <div class="card">
 <h3>➕ Create Character</h3>
 
-<input id="name" placeholder="Name">
-<textarea id="desc" placeholder="Description"></textarea>
-<input type="color" id="color" value="#6c5ce7">
+<input id="charName" placeholder="Name">
+<textarea id="charDesc" placeholder="Description"></textarea>
+<input type="color" id="charColor" value="#6c5ce7">
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
@@ -67,11 +60,9 @@ background:#222;padding:15px;border-radius:10px
 
 <div class="card">
 <h3>🕒 Timeline</h3>
-
-<input id="time" placeholder="Year">
+<input id="timeInput" placeholder="Year">
 <input id="eventInput" placeholder="Event">
 <button onclick="addEvent()">Add</button>
-
 <div id="timeline" class="timeline"></div>
 </div>
 
@@ -86,28 +77,21 @@ background:#222;padding:15px;border-radius:10px
 </div>
 </div>
 
-<!-- EDIT MODAL -->
+<!-- EDIT -->
 <div id="editModal" class="modal" style="display:none">
-<h3>Edit Character</h3>
 <input id="editName">
 <textarea id="editDesc"></textarea>
-
-<h4>Traits</h4>
 <div id="editTraits"></div>
-
 <button onclick="saveEdit()">Save</button>
 <button onclick="closeEdit()">Cancel</button>
 </div>
 
-<!-- RELATIONSHIP MODAL -->
+<!-- REL -->
 <div id="relUI" class="modal" style="display:none">
-<h3>Add Relationship</h3>
-
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
 <input type="color" id="rColor" value="#ff0000">
-
 <button onclick="createRel()">Create</button>
 <button onclick="closeRel()">❌ Cancel</button>
 </div>
@@ -123,14 +107,14 @@ let TRAITS=[
 let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
 
 let data={chars:[],rels:[],timeline:[]};
-
 let tempTraits=[];
 let editId=null;
 
 // TRAITS
 
 function addTrait(){
-let t=traitSel.value;
+let sel=document.getElementById("traitSel");
+let t=sel.value;
 if(!tempTraits.includes(t)) tempTraits.push(t);
 renderTempTraits();
 }
@@ -141,32 +125,37 @@ renderTempTraits();
 }
 
 function renderTempTraits(){
-traitList.innerHTML=tempTraits.map((t,i)=>
+let div=document.getElementById("traitList");
+div.innerHTML=tempTraits.map((t,i)=>
 `${t} <button onclick="removeTempTrait(${i})">❌</button>`
 ).join("<br>");
 }
 
-// CHARACTER CREATE
+// CREATE CHARACTER
 
 function createChar(){
+let nameEl=document.getElementById("charName");
+let descEl=document.getElementById("charDesc");
+let colorEl=document.getElementById("charColor");
 
-let n=name.value.trim();
+let n=nameEl.value.trim();
+
 if(!n){
-alert("Enter name");
+alert("Enter a name");
 return;
 }
 
 data.chars.push({
 id:Date.now(),
 name:n,
-desc:desc.value.trim(),
-color:color.value,
+desc:descEl.value.trim(),
+color:colorEl.value,
 traits:[...tempTraits],
 x:150,y:150
 });
 
-name.value="";
-desc.value="";
+nameEl.value="";
+descEl.value="";
 tempTraits=[];
 
 render();
@@ -178,14 +167,14 @@ function openEdit(id){
 let c=data.chars.find(x=>x.id===id);
 editId=id;
 
-editName.value=c.name;
-editDesc.value=c.desc;
+document.getElementById("editName").value=c.name;
+document.getElementById("editDesc").value=c.desc;
 
-editTraits.innerHTML=c.traits.map((t,i)=>
+document.getElementById("editTraits").innerHTML=c.traits.map((t,i)=>
 `${t} <button onclick="removeTrait(${i})">❌</button>`
 ).join("<br>");
 
-editModal.style.display="block";
+document.getElementById("editModal").style.display="block";
 }
 
 function removeTrait(i){
@@ -197,22 +186,22 @@ openEdit(editId);
 function saveEdit(){
 let c=data.chars.find(x=>x.id===editId);
 
-c.name=editName.value;
-c.desc=editDesc.value;
+c.name=document.getElementById("editName").value;
+c.desc=document.getElementById("editDesc").value;
 
-editModal.style.display="none";
+closeEdit();
 render();
 }
 
 function closeEdit(){
-editModal.style.display="none";
+document.getElementById("editModal").style.display="none";
 }
 
 // TIMELINE
 
 function addEvent(){
-let t=parseInt(time.value);
-let e=eventInput.value.trim();
+let t=parseInt(document.getElementById("timeInput").value);
+let e=document.getElementById("eventInput").value.trim();
 
 if(!e)return;
 
@@ -225,28 +214,41 @@ data.timeline.splice(i,1);
 render();
 }
 
-// RELATIONSHIPS
+// REL
 
 function openRel(){
-relUI.style.display="block";
+let modal=document.getElementById("relUI");
+modal.style.display="block";
 
-rA.innerHTML=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
-rB.innerHTML=rA.innerHTML;
-rType.innerHTML=REL.map(r=>`<option>${r}</option>`);
+let a=document.getElementById("rA");
+let b=document.getElementById("rB");
+let t=document.getElementById("rType");
+
+a.innerHTML=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
+b.innerHTML=a.innerHTML;
+t.innerHTML=REL.map(r=>`<option>${r}</option>`);
 }
 
 function closeRel(){
-relUI.style.display="none";
+document.getElementById("relUI").style.display="none";
 }
 
 function createRel(){
 data.rels.push({
-a:+rA.value,
-b:+rB.value,
-type:rType.value,
-color:rColor.value
+a:+document.getElementById("rA").value,
+b:+document.getElementById("rB").value,
+type:document.getElementById("rType").value,
+color:document.getElementById("rColor").value
 });
-relUI.style.display="none";
+closeRel();
+render();
+}
+
+// DELETE
+
+function deleteChar(id){
+data.chars=data.chars.filter(c=>c.id!==id);
+data.rels=data.rels.filter(r=>r.a!==id&&r.b!==id);
 render();
 }
 
@@ -254,16 +256,17 @@ render();
 
 function render(){
 
+let traitSel=document.getElementById("traitSel");
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-charList.innerHTML=data.chars.map(c=>
-`<div>${c.name} 
+document.getElementById("charList").innerHTML=data.chars.map(c=>
+`<div>${c.name}
 <button onclick="openEdit(${c.id})">✏️</button>
 <button onclick="deleteChar(${c.id})">❌</button>
 </div>`
 ).join("");
 
-timeline.innerHTML=data.timeline
+document.getElementById("timeline").innerHTML=data.timeline
 .sort((a,b)=>a.t-b.t)
 .map((e,i)=>
 `<div class="event">${e.t}<br>${e.e}
@@ -274,17 +277,10 @@ timeline.innerHTML=data.timeline
 renderMap();
 }
 
-// DELETE CHARACTER
-
-function deleteChar(id){
-data.chars=data.chars.filter(c=>c.id!==id);
-data.rels=data.rels.filter(r=>r.a!==id && r.b!==id);
-render();
-}
-
 // MAP
 
 function renderMap(){
+let map=document.getElementById("map");
 map.innerHTML="";
 
 data.rels.forEach((r,i)=>{
