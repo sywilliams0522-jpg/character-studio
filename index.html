@@ -5,10 +5,10 @@
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#0d0d0d;color:white}
-header{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #444}
+header{padding:10px;border-bottom:1px solid #444;font-size:20px}
 
 .container{display:flex;height:calc(100vh - 50px)}
-.sidebar{width:260px;border-right:1px solid #444;padding:10px;overflow:auto}
+.sidebar{width:250px;border-right:1px solid #444;padding:10px;overflow:auto}
 .main{flex:1;padding:10px;overflow:auto}
 
 .card{border:1px solid #444;border-radius:10px;padding:10px;margin-bottom:10px}
@@ -22,35 +22,26 @@ border:1px solid #444;background:#111;color:white
 }
 
 #map{height:400px;border:1px solid #444;position:relative;border-radius:10px}
-.node{position:absolute;border-radius:8px;text-align:center;cursor:grab;color:white;font-size:12px}
+.node{position:absolute;border-radius:8px;text-align:center;color:white;cursor:grab;font-size:12px}
 .line{position:absolute;height:3px;transform-origin:left center}
 
 .timeline{display:flex;gap:10px;overflow-x:auto}
 .event{border:1px solid #555;padding:8px;border-radius:8px;min-width:120px}
 
-.modal{position:fixed;top:25%;left:35%;background:#222;padding:15px;border-radius:10px}
+.modal{
+position:fixed;top:25%;left:35%;
+background:#222;padding:15px;border-radius:10px
+}
 </style>
 </head>
 
 <body>
 
-<header>
-<div>📚 Character Studio</div>
-</header>
+<header>📚 Character Studio</header>
 
 <div class="container">
 
 <div class="sidebar">
-
-<h3>📂 Folder</h3>
-<select id="folderSel"></select>
-<input id="newFolder" placeholder="New folder">
-<button onclick="addFolder()">➕</button>
-
-<h3>📁 Project</h3>
-<select id="projectSel"></select>
-<input id="newProject" placeholder="New project">
-<button onclick="addProject()">➕</button>
 
 <h3>👥 Characters</h3>
 <div id="charList"></div>
@@ -61,6 +52,7 @@ border:1px solid #444;background:#111;color:white
 
 <div class="card">
 <h3>➕ Create Character</h3>
+
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
 <input type="color" id="color" value="#6c5ce7">
@@ -69,14 +61,17 @@ border:1px solid #444;background:#111;color:white
 <button onclick="addTrait()">Add Trait</button>
 
 <div id="traitList"></div>
-<button onclick="createChar()">Create</button>
+
+<button onclick="createChar()">Create Character</button>
 </div>
 
 <div class="card">
 <h3>🕒 Timeline</h3>
+
 <input id="time" placeholder="Year">
 <input id="eventInput" placeholder="Event">
 <button onclick="addEvent()">Add</button>
+
 <div id="timeline" class="timeline"></div>
 </div>
 
@@ -91,19 +86,30 @@ border:1px solid #444;background:#111;color:white
 </div>
 </div>
 
+<!-- EDIT MODAL -->
 <div id="editModal" class="modal" style="display:none">
+<h3>Edit Character</h3>
 <input id="editName">
 <textarea id="editDesc"></textarea>
+
+<h4>Traits</h4>
 <div id="editTraits"></div>
+
 <button onclick="saveEdit()">Save</button>
+<button onclick="closeEdit()">Cancel</button>
 </div>
 
+<!-- RELATIONSHIP MODAL -->
 <div id="relUI" class="modal" style="display:none">
+<h3>Add Relationship</h3>
+
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
-<input type="color" id="rColor">
+<input type="color" id="rColor" value="#ff0000">
+
 <button onclick="createRel()">Create</button>
+<button onclick="closeRel()">❌ Cancel</button>
 </div>
 
 <script>
@@ -116,65 +122,60 @@ let TRAITS=[
 
 let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
 
-let data={folders:{}};
-let currentFolder=null,currentProject=null;
+let data={chars:[],rels:[],timeline:[]};
+
 let tempTraits=[];
 let editId=null;
 
-function getP(){
-return data.folders[currentFolder]?.projects[currentProject];
-}
-
-function addFolder(){
-let n=newFolder.value.trim();
-if(!n)return;
-data.folders[n]={projects:{}};
-currentFolder=n;
-render();
-}
-
-function addProject(){
-if(!currentFolder)return;
-let n=newProject.value.trim();
-if(!n)return;
-data.folders[currentFolder].projects[n]={chars:[],rels:[],timeline:[]};
-currentProject=n;
-render();
-}
-
-folderSel.onchange=()=>{currentFolder=folderSel.value;render();}
-projectSel.onchange=()=>{currentProject=projectSel.value;render();}
+// TRAITS
 
 function addTrait(){
 let t=traitSel.value;
-if(!tempTraits.includes(t))tempTraits.push(t);
-traitList.innerText=tempTraits.join(", ");
+if(!tempTraits.includes(t)) tempTraits.push(t);
+renderTempTraits();
 }
 
+function removeTempTrait(i){
+tempTraits.splice(i,1);
+renderTempTraits();
+}
+
+function renderTempTraits(){
+traitList.innerHTML=tempTraits.map((t,i)=>
+`${t} <button onclick="removeTempTrait(${i})">❌</button>`
+).join("<br>");
+}
+
+// CHARACTER CREATE
+
 function createChar(){
-let p=getP();
-if(!p)return alert("Select project first");
 
 let n=name.value.trim();
-if(!n)return alert("Enter name");
+if(!n){
+alert("Enter name");
+return;
+}
 
-p.chars.push({
+data.chars.push({
 id:Date.now(),
 name:n,
-desc:desc.value,
+desc:desc.value.trim(),
 color:color.value,
 traits:[...tempTraits],
 x:150,y:150
 });
 
+name.value="";
+desc.value="";
 tempTraits=[];
-name.value="";desc.value="";
+
 render();
 }
 
+// EDIT
+
 function openEdit(id){
-let p=getP();
-let c=p.chars.find(x=>x.id===id);
+let c=data.chars.find(x=>x.id===id);
 editId=id;
 
 editName.value=c.name;
@@ -188,15 +189,13 @@ editModal.style.display="block";
 }
 
 function removeTrait(i){
-let p=getP();
-let c=p.chars.find(x=>x.id===editId);
+let c=data.chars.find(x=>x.id===editId);
 c.traits.splice(i,1);
 openEdit(editId);
 }
 
 function saveEdit(){
-let p=getP();
-let c=p.chars.find(x=>x.id===editId);
+let c=data.chars.find(x=>x.id===editId);
 
 c.name=editName.value;
 c.desc=editDesc.value;
@@ -205,73 +204,92 @@ editModal.style.display="none";
 render();
 }
 
-function addEvent(){
-let p=getP(); if(!p)return;
+function closeEdit(){
+editModal.style.display="none";
+}
 
+// TIMELINE
+
+function addEvent(){
 let t=parseInt(time.value);
 let e=eventInput.value.trim();
 
 if(!e)return;
 
-p.timeline.push({t:isNaN(t)?0:t,e});
+data.timeline.push({t:isNaN(t)?0:t,e});
 render();
 }
 
 function deleteEvent(i){
-getP().timeline.splice(i,1);
+data.timeline.splice(i,1);
 render();
 }
 
-function openRel(){
-let p=getP(); if(!p)return;
+// RELATIONSHIPS
 
+function openRel(){
 relUI.style.display="block";
-rA.innerHTML=p.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
+
+rA.innerHTML=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
 rB.innerHTML=rA.innerHTML;
 rType.innerHTML=REL.map(r=>`<option>${r}</option>`);
 }
 
+function closeRel(){
+relUI.style.display="none";
+}
+
 function createRel(){
-let p=getP();
-p.rels.push({a:+rA.value,b:+rB.value,type:rType.value,color:rColor.value});
+data.rels.push({
+a:+rA.value,
+b:+rB.value,
+type:rType.value,
+color:rColor.value
+});
 relUI.style.display="none";
 render();
 }
 
-function render(){
+// RENDER
 
-folderSel.innerHTML=Object.keys(data.folders).map(f=>`<option>${f}</option>`);
-if(currentFolder){
-projectSel.innerHTML=Object.keys(data.folders[currentFolder].projects)
-.map(p=>`<option>${p}</option>`);
-}
+function render(){
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-let p=getP();
-if(!p)return;
-
-charList.innerHTML=p.chars.map(c=>
-`<div>${c.name} <button onclick="openEdit(${c.id})">✏️</button></div>`
+charList.innerHTML=data.chars.map(c=>
+`<div>${c.name} 
+<button onclick="openEdit(${c.id})">✏️</button>
+<button onclick="deleteChar(${c.id})">❌</button>
+</div>`
 ).join("");
 
-timeline.innerHTML=p.timeline
+timeline.innerHTML=data.timeline
 .sort((a,b)=>a.t-b.t)
 .map((e,i)=>
 `<div class="event">${e.t}<br>${e.e}
-<button onclick="deleteEvent(${i})">❌</button></div>`
+<button onclick="deleteEvent(${i})">❌</button>
+</div>`
 ).join("");
 
 renderMap();
 }
 
+// DELETE CHARACTER
+
+function deleteChar(id){
+data.chars=data.chars.filter(c=>c.id!==id);
+data.rels=data.rels.filter(r=>r.a!==id && r.b!==id);
+render();
+}
+
+// MAP
+
 function renderMap(){
-let p=getP(); if(!p)return;
 map.innerHTML="";
 
-p.rels.forEach((r,i)=>{
-let a=p.chars.find(c=>c.id===r.a);
-let b=p.chars.find(c=>c.id===r.b);
+data.rels.forEach((r,i)=>{
+let a=data.chars.find(c=>c.id===r.a);
+let b=data.chars.find(c=>c.id===r.b);
 if(!a||!b)return;
 
 let ax=a.x+35, ay=a.y+35;
@@ -289,11 +307,15 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-line.onclick=()=>{p.rels.splice(i,1);render();};
+line.onclick=()=>{
+data.rels.splice(i,1);
+render();
+};
+
 map.appendChild(line);
 });
 
-p.chars.forEach(c=>{
+data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
 node.innerText=c.name;
@@ -322,6 +344,7 @@ map.appendChild(node);
 });
 }
 
+// INIT
 render();
 
 </script>
