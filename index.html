@@ -8,12 +8,14 @@ body{margin:0;font-family:Segoe UI;background:#0d0d0d;color:white}
 header{padding:10px;border-bottom:1px solid #444;font-size:20px}
 
 .container{display:flex;height:calc(100vh - 50px)}
-.sidebar{width:250px;border-right:1px solid #444;padding:10px}
+.sidebar{width:260px;border-right:1px solid #444;padding:10px}
 .main{flex:1;padding:10px}
 
 .card{border:1px solid #444;border-radius:10px;padding:10px;margin-bottom:10px}
 
 button{background:#2d2d2d;color:white;border:none;padding:6px;border-radius:6px;cursor:pointer}
+button:hover{background:#444}
+
 input,select,textarea{
 width:100%;margin:5px 0;padding:5px;border-radius:6px;
 border:1px solid #444;background:#111;color:white
@@ -26,7 +28,10 @@ border:1px solid #444;background:#111;color:white
 .timeline{display:flex;gap:10px;overflow-x:auto}
 .event{border:1px solid #555;padding:8px;border-radius:8px;min-width:120px}
 
-.modal{position:fixed;top:25%;left:35%;background:#222;padding:15px;border-radius:10px}
+.modal{
+position:fixed;top:25%;left:35%;
+background:#222;padding:15px;border-radius:10px
+}
 </style>
 </head>
 
@@ -52,6 +57,7 @@ border:1px solid #444;background:#111;color:white
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
+<button onclick="addCustomTrait()">+ Custom Trait</button>
 
 <div id="traitList"></div>
 
@@ -79,6 +85,7 @@ border:1px solid #444;background:#111;color:white
 
 <!-- EDIT -->
 <div id="editModal" class="modal" style="display:none">
+<h3>Edit Character</h3>
 <input id="editName">
 <textarea id="editDesc"></textarea>
 <div id="editTraits"></div>
@@ -88,9 +95,11 @@ border:1px solid #444;background:#111;color:white
 
 <!-- REL -->
 <div id="relUI" class="modal" style="display:none">
+<h3>Add Relationship</h3>
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
+<button onclick="addCustomRel()">+ Custom</button>
 <input type="color" id="rColor" value="#ff0000">
 <button onclick="createRel()">Create</button>
 <button onclick="closeRel()">❌ Cancel</button>
@@ -107,16 +116,24 @@ let TRAITS=[
 let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
 
 let data={chars:[],rels:[],timeline:[]};
+
 let tempTraits=[];
 let editId=null;
 
 // TRAITS
 
 function addTrait(){
-let sel=document.getElementById("traitSel");
-let t=sel.value;
+let t=document.getElementById("traitSel").value;
 if(!tempTraits.includes(t)) tempTraits.push(t);
 renderTempTraits();
+}
+
+function addCustomTrait(){
+let t=prompt("New trait:");
+if(!t)return;
+TRAITS.push(t);
+TRAITS=[...new Set(TRAITS)].sort();
+render();
 }
 
 function removeTempTrait(i){
@@ -125,39 +142,35 @@ renderTempTraits();
 }
 
 function renderTempTraits(){
-let div=document.getElementById("traitList");
-div.innerHTML=tempTraits.map((t,i)=>
-`${t} <button onclick="removeTempTrait(${i})">❌</button>`
-).join("<br>");
+document.getElementById("traitList").innerHTML=
+tempTraits.map((t,i)=>`${t} <button onclick="removeTempTrait(${i})">❌</button>`).join("<br>");
 }
 
-// CREATE CHARACTER
+// CHARACTER
 
 function createChar(){
-let nameEl=document.getElementById("charName");
-let descEl=document.getElementById("charDesc");
-let colorEl=document.getElementById("charColor");
-
-let n=nameEl.value.trim();
-
-if(!n){
-alert("Enter a name");
-return;
-}
+let n=document.getElementById("charName").value.trim();
+if(!n){alert("Enter name");return;}
 
 data.chars.push({
 id:Date.now(),
 name:n,
-desc:descEl.value.trim(),
-color:colorEl.value,
+desc:document.getElementById("charDesc").value,
+color:document.getElementById("charColor").value,
 traits:[...tempTraits],
 x:150,y:150
 });
 
-nameEl.value="";
-descEl.value="";
+document.getElementById("charName").value="";
+document.getElementById("charDesc").value="";
 tempTraits=[];
 
+render();
+}
+
+function deleteChar(id){
+data.chars=data.chars.filter(c=>c.id!==id);
+data.rels=data.rels.filter(r=>r.a!==id&&r.b!==id);
 render();
 }
 
@@ -167,14 +180,12 @@ function openEdit(id){
 let c=data.chars.find(x=>x.id===id);
 editId=id;
 
-document.getElementById("editName").value=c.name;
-document.getElementById("editDesc").value=c.desc;
+editName.value=c.name;
+editDesc.value=c.desc;
 
-document.getElementById("editTraits").innerHTML=c.traits.map((t,i)=>
-`${t} <button onclick="removeTrait(${i})">❌</button>`
-).join("<br>");
+editTraits.innerHTML=c.traits.map((t,i)=>`${t} <button onclick="removeTrait(${i})">❌</button>`).join("<br>");
 
-document.getElementById("editModal").style.display="block";
+editModal.style.display="block";
 }
 
 function removeTrait(i){
@@ -185,16 +196,14 @@ openEdit(editId);
 
 function saveEdit(){
 let c=data.chars.find(x=>x.id===editId);
-
-c.name=document.getElementById("editName").value;
-c.desc=document.getElementById("editDesc").value;
-
+c.name=editName.value;
+c.desc=editDesc.value;
 closeEdit();
 render();
 }
 
 function closeEdit(){
-document.getElementById("editModal").style.display="none";
+editModal.style.display="none";
 }
 
 // TIMELINE
@@ -202,7 +211,6 @@ document.getElementById("editModal").style.display="none";
 function addEvent(){
 let t=parseInt(document.getElementById("timeInput").value);
 let e=document.getElementById("eventInput").value.trim();
-
 if(!e)return;
 
 data.timeline.push({t:isNaN(t)?0:t,e});
@@ -214,23 +222,29 @@ data.timeline.splice(i,1);
 render();
 }
 
-// REL
+// RELATIONSHIPS
 
 function openRel(){
 let modal=document.getElementById("relUI");
 modal.style.display="block";
 
-let a=document.getElementById("rA");
-let b=document.getElementById("rB");
-let t=document.getElementById("rType");
+let options=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
 
-a.innerHTML=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`);
-b.innerHTML=a.innerHTML;
-t.innerHTML=REL.map(r=>`<option>${r}</option>`);
+document.getElementById("rA").innerHTML=options;
+document.getElementById("rB").innerHTML=options;
+document.getElementById("rType").innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
 }
 
 function closeRel(){
 document.getElementById("relUI").style.display="none";
+}
+
+function addCustomRel(){
+let r=prompt("New relationship:");
+if(!r)return;
+REL.push(r);
+REL=[...new Set(REL)];
+openRel();
 }
 
 function createRel(){
@@ -244,35 +258,26 @@ closeRel();
 render();
 }
 
-// DELETE
-
-function deleteChar(id){
-data.chars=data.chars.filter(c=>c.id!==id);
-data.rels=data.rels.filter(r=>r.a!==id&&r.b!==id);
-render();
-}
-
 // RENDER
 
 function render(){
 
-let traitSel=document.getElementById("traitSel");
-traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
+document.getElementById("traitSel").innerHTML=
+TRAITS.map(t=>`<option>${t}</option>`).join("");
 
-document.getElementById("charList").innerHTML=data.chars.map(c=>
+document.getElementById("charList").innerHTML=
+data.chars.map(c=>
 `<div>${c.name}
 <button onclick="openEdit(${c.id})">✏️</button>
 <button onclick="deleteChar(${c.id})">❌</button>
-</div>`
-).join("");
+</div>`).join("");
 
-document.getElementById("timeline").innerHTML=data.timeline
-.sort((a,b)=>a.t-b.t)
+document.getElementById("timeline").innerHTML=
+data.timeline.sort((a,b)=>a.t-b.t)
 .map((e,i)=>
 `<div class="event">${e.t}<br>${e.e}
 <button onclick="deleteEvent(${i})">❌</button>
-</div>`
-).join("");
+</div>`).join("");
 
 renderMap();
 }
@@ -303,12 +308,20 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
+let label=document.createElement("div");
+label.innerText=r.type;
+label.style.position="absolute";
+label.style.left=(ax+bx)/2+"px";
+label.style.top=(ay+by)/2+"px";
+label.style.fontSize="12px";
+
 line.onclick=()=>{
 data.rels.splice(i,1);
 render();
 };
 
 map.appendChild(line);
+map.appendChild(label);
 });
 
 data.chars.forEach(c=>{
@@ -328,8 +341,7 @@ let ox=e.offsetX, oy=e.offsetY;
 function move(ev){
 c.x=ev.pageX-map.offsetLeft-ox;
 c.y=ev.pageY-map.offsetTop-oy;
-node.style.left=c.x+"px";
-node.style.top=c.y+"px";
+renderMap();
 }
 
 document.addEventListener("mousemove",move);
