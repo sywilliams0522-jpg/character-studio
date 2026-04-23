@@ -4,40 +4,128 @@
 <title>📚 Character Studio</title>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#0d0d0d;color:white}
-header{padding:10px;border-bottom:1px solid #444;font-size:20px}
+:root{
+--bg:#0d0d0d;
+--text:#ffffff;
+--card:#1a1a1a;
+}
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:var(--bg);
+color:var(--text);
+transition:0.3s;
+}
+
+.light{
+--bg:#ffffff;
+--text:#000000;
+--card:#f0f0f0;
+}
+
+header{
+display:flex;
+justify-content:space-between;
+padding:10px;
+border-bottom:1px solid #444;
+font-size:20px;
+}
 
 .container{display:flex;height:calc(100vh - 50px)}
 .sidebar{width:260px;border-right:1px solid #444;padding:10px}
 .main{flex:1;padding:10px}
 
-.card{border:1px solid #444;border-radius:10px;padding:10px;margin-bottom:10px}
-
-button{background:#2d2d2d;color:white;border:none;padding:6px;border-radius:6px;cursor:pointer}
-button:hover{background:#444}
-
-input,select,textarea{
-width:100%;margin:5px 0;padding:5px;border-radius:6px;
-border:1px solid #444;background:#111;color:white
+.card{
+background:var(--card);
+border:1px solid #444;
+border-radius:10px;
+padding:10px;
+margin-bottom:10px;
 }
 
-#map{height:400px;border:1px solid #444;position:relative;border-radius:10px}
-.node{position:absolute;border-radius:8px;text-align:center;color:white;cursor:grab;font-size:12px}
-.line{position:absolute;height:3px;transform-origin:left center}
+button{
+background:#2d2d2d;
+color:white;
+border:none;
+padding:6px;
+border-radius:6px;
+cursor:pointer;
+}
+
+input,select,textarea{
+width:100%;
+margin:5px 0;
+padding:5px;
+border-radius:6px;
+border:1px solid #444;
+background:#111;
+color:white;
+}
+
+.light input,.light select,.light textarea{
+background:white;
+color:black;
+}
+
+#map{
+height:400px;
+border:1px solid #444;
+position:relative;
+border-radius:10px;
+}
+
+.node{
+position:absolute;
+border-radius:8px;
+text-align:center;
+cursor:grab;
+color:white;
+font-size:12px;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.line{
+position:absolute;
+height:3px;
+transform-origin:left center;
+}
 
 .timeline{display:flex;gap:10px;overflow-x:auto}
-.event{border:1px solid #555;padding:8px;border-radius:8px;min-width:120px}
+
+.event{
+border:1px solid #555;
+padding:8px;
+border-radius:8px;
+min-width:120px;
+}
 
 .modal{
-position:fixed;top:25%;left:35%;
-background:#222;padding:15px;border-radius:10px
+position:fixed;
+top:25%;
+left:35%;
+background:#222;
+padding:15px;
+border-radius:10px;
+}
+
+.toggle{
+cursor:pointer;
+padding:6px 10px;
+border-radius:20px;
+background:#555;
 }
 </style>
 </head>
 
 <body>
 
-<header>📚 Character Studio</header>
+<header>
+📚 Character Studio
+<div class="toggle" onclick="toggleTheme()">🌙 / ☀️</div>
+</header>
 
 <div class="container">
 
@@ -54,6 +142,9 @@ background:#222;padding:15px;border-radius:10px
 <input id="charName" placeholder="Name">
 <textarea id="charDesc" placeholder="Description"></textarea>
 <input type="color" id="charColor" value="#6c5ce7">
+
+<label>Size</label>
+<input type="range" id="charSize" min="40" max="120" value="70">
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
@@ -83,16 +174,6 @@ background:#222;padding:15px;border-radius:10px
 </div>
 </div>
 
-<!-- EDIT -->
-<div id="editModal" class="modal" style="display:none">
-<h3>Edit Character</h3>
-<input id="editName">
-<textarea id="editDesc"></textarea>
-<div id="editTraits"></div>
-<button onclick="saveEdit()">Save</button>
-<button onclick="closeEdit()">Cancel</button>
-</div>
-
 <!-- REL -->
 <div id="relUI" class="modal" style="display:none">
 <h3>Add Relationship</h3>
@@ -107,23 +188,22 @@ background:#222;padding:15px;border-radius:10px
 
 <script>
 
-let TRAITS=[
-"Aggressive","Brave","Calm","Charming","Cold","Confident","Creative","Curious",
-"Funny","Honest","Impulsive","Jealous","Kind","Lazy","Leader","Loyal",
-"Manipulative","Patient","Reckless","Selfish","Smart","Strategic"
-].sort();
-
-let REL=["Friend","Enemy","Sibling","Married","Rival","Mentor"];
+let TRAITS=["Brave","Calm","Creative","Funny","Kind","Smart"].sort();
+let REL=["Friend","Enemy","Sibling","Married"];
 
 let data={chars:[],rels:[],timeline:[]};
-
 let tempTraits=[];
-let editId=null;
+
+// THEME
+
+function toggleTheme(){
+document.body.classList.toggle("light");
+}
 
 // TRAITS
 
 function addTrait(){
-let t=document.getElementById("traitSel").value;
+let t=traitSel.value;
 if(!tempTraits.includes(t)) tempTraits.push(t);
 renderTempTraits();
 }
@@ -136,107 +216,57 @@ TRAITS=[...new Set(TRAITS)].sort();
 render();
 }
 
-function removeTempTrait(i){
-tempTraits.splice(i,1);
-renderTempTraits();
-}
-
 function renderTempTraits(){
-document.getElementById("traitList").innerHTML=
-tempTraits.map((t,i)=>`${t} <button onclick="removeTempTrait(${i})">❌</button>`).join("<br>");
+traitList.innerHTML=tempTraits.join(", ");
 }
 
-// CHARACTER
+// CREATE CHARACTER
 
 function createChar(){
-let n=document.getElementById("charName").value.trim();
+let n=charName.value.trim();
 if(!n){alert("Enter name");return;}
 
 data.chars.push({
 id:Date.now(),
 name:n,
-desc:document.getElementById("charDesc").value,
-color:document.getElementById("charColor").value,
+desc:charDesc.value,
+color:charColor.value,
+size:+charSize.value,
 traits:[...tempTraits],
 x:150,y:150
 });
 
-document.getElementById("charName").value="";
-document.getElementById("charDesc").value="";
+charName.value="";
+charDesc.value="";
 tempTraits=[];
 
 render();
 }
 
-function deleteChar(id){
-data.chars=data.chars.filter(c=>c.id!==id);
-data.rels=data.rels.filter(r=>r.a!==id&&r.b!==id);
-render();
-}
-
-// EDIT
-
-function openEdit(id){
-let c=data.chars.find(x=>x.id===id);
-editId=id;
-
-editName.value=c.name;
-editDesc.value=c.desc;
-
-editTraits.innerHTML=c.traits.map((t,i)=>`${t} <button onclick="removeTrait(${i})">❌</button>`).join("<br>");
-
-editModal.style.display="block";
-}
-
-function removeTrait(i){
-let c=data.chars.find(x=>x.id===editId);
-c.traits.splice(i,1);
-openEdit(editId);
-}
-
-function saveEdit(){
-let c=data.chars.find(x=>x.id===editId);
-c.name=editName.value;
-c.desc=editDesc.value;
-closeEdit();
-render();
-}
-
-function closeEdit(){
-editModal.style.display="none";
-}
-
 // TIMELINE
 
 function addEvent(){
-let t=parseInt(document.getElementById("timeInput").value);
-let e=document.getElementById("eventInput").value.trim();
+let t=parseInt(timeInput.value);
+let e=eventInput.value;
 if(!e)return;
 
 data.timeline.push({t:isNaN(t)?0:t,e});
 render();
 }
 
-function deleteEvent(i){
-data.timeline.splice(i,1);
-render();
-}
-
-// RELATIONSHIPS
+// REL
 
 function openRel(){
-let modal=document.getElementById("relUI");
-modal.style.display="block";
+relUI.style.display="block";
 
-let options=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
-
-document.getElementById("rA").innerHTML=options;
-document.getElementById("rB").innerHTML=options;
-document.getElementById("rType").innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
+let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
+rA.innerHTML=opts;
+rB.innerHTML=opts;
+rType.innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
 }
 
 function closeRel(){
-document.getElementById("relUI").style.display="none";
+relUI.style.display="none";
 }
 
 function addCustomRel(){
@@ -249,10 +279,10 @@ openRel();
 
 function createRel(){
 data.rels.push({
-a:+document.getElementById("rA").value,
-b:+document.getElementById("rB").value,
-type:document.getElementById("rType").value,
-color:document.getElementById("rColor").value
+a:+rA.value,
+b:+rB.value,
+type:rType.value,
+color:rColor.value
 });
 closeRel();
 render();
@@ -262,22 +292,12 @@ render();
 
 function render(){
 
-document.getElementById("traitSel").innerHTML=
-TRAITS.map(t=>`<option>${t}</option>`).join("");
+traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
-document.getElementById("charList").innerHTML=
-data.chars.map(c=>
-`<div>${c.name}
-<button onclick="openEdit(${c.id})">✏️</button>
-<button onclick="deleteChar(${c.id})">❌</button>
-</div>`).join("");
+charList.innerHTML=data.chars.map(c=>`<div>${c.name}</div>`).join("");
 
-document.getElementById("timeline").innerHTML=
-data.timeline.sort((a,b)=>a.t-b.t)
-.map((e,i)=>
-`<div class="event">${e.t}<br>${e.e}
-<button onclick="deleteEvent(${i})">❌</button>
-</div>`).join("");
+timeline.innerHTML=data.timeline.sort((a,b)=>a.t-b.t)
+.map(e=>`<div class="event">${e.t}<br>${e.e}</div>`).join("");
 
 renderMap();
 }
@@ -285,18 +305,19 @@ renderMap();
 // MAP
 
 function renderMap(){
-let map=document.getElementById("map");
 map.innerHTML="";
 
-data.rels.forEach((r,i)=>{
+data.rels.forEach(r=>{
 let a=data.chars.find(c=>c.id===r.a);
 let b=data.chars.find(c=>c.id===r.b);
 if(!a||!b)return;
 
-let ax=a.x+35, ay=a.y+35;
-let bx=b.x+35, by=b.y+35;
+let ax=a.x+a.size/2;
+let ay=a.y+a.size/2;
+let bx=b.x+b.size/2;
+let by=b.y+b.size/2;
 
-let dx=bx-ax, dy=by-ay;
+let dx=bx-ax,dy=by-ay;
 let dist=Math.sqrt(dx*dx+dy*dy);
 let angle=Math.atan2(dy,dx)*180/Math.PI;
 
@@ -313,12 +334,6 @@ label.innerText=r.type;
 label.style.position="absolute";
 label.style.left=(ax+bx)/2+"px";
 label.style.top=(ay+by)/2+"px";
-label.style.fontSize="12px";
-
-line.onclick=()=>{
-data.rels.splice(i,1);
-render();
-};
 
 map.appendChild(line);
 map.appendChild(label);
@@ -331,9 +346,8 @@ node.innerText=c.name;
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
 node.style.background=c.color;
-node.style.width="70px";
-node.style.height="70px";
-node.style.lineHeight="70px";
+node.style.width=c.size+"px";
+node.style.height=c.size+"px";
 
 node.onmousedown=e=>{
 let ox=e.offsetX, oy=e.offsetY;
@@ -352,7 +366,6 @@ map.appendChild(node);
 });
 }
 
-// INIT
 render();
 
 </script>
