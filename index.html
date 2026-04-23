@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>📚 Character Studio</title>
+<title>Character Studio</title>
 
 <style>
 body{margin:0;font-family:sans-serif;background:#111;color:#fff}
-.light{background:#fff;color:#000}
-
-header{padding:10px;border-bottom:1px solid #444;display:flex;justify-content:space-between}
+header{padding:10px;border-bottom:1px solid #444}
 
 .container{display:flex;height:calc(100vh - 50px)}
 
-.sidebar{width:250px;border-right:1px solid #444;padding:10px;overflow:auto}
+.sidebar{width:250px;border-right:1px solid #444;padding:10px}
 .main{flex:1;padding:10px;overflow:auto}
 
 .card{border:1px solid #444;padding:10px;margin-bottom:10px;border-radius:10px}
 
 input,select,textarea{width:100%;margin:5px 0;padding:5px}
 
-#mapWrap{height:500px;overflow:auto;border:1px solid #444}
-#map{width:2000px;height:1500px;position:relative}
+#mapWrap{
+height:500px;
+overflow:auto;
+border:1px solid #444;
+}
+
+#map{
+width:3000px;
+height:5000px; /* VERY TALL */
+position:relative;
+background:#1a1a1a;
+}
 
 .node{
 position:absolute;
@@ -36,63 +44,52 @@ user-select:none;
 position:absolute;
 height:3px;
 transform-origin:left;
-z-index:5;
-}
-
-.label{
-position:absolute;
-font-size:12px;
-z-index:6;
-}
-
-.panel{
-position:fixed;
-right:10px;
-top:100px;
-background:#222;
-padding:10px;
-border-radius:10px;
-width:260px;
-}
-
-.modal{
-position:fixed;
-top:20%;
-left:30%;
-background:#222;
-padding:15px;
-border-radius:10px;
+background:red;
+z-index:10;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-📚 Character Studio
-<button onclick="toggleTheme()">🌙 / ☀️</button>
-</header>
+<header>Character Studio</header>
 
 <div class="container">
 
 <div class="sidebar">
-<h3>👥 Characters</h3>
+<h3>Characters</h3>
 <div id="charList"></div>
 </div>
 
 <div class="main">
 
 <div class="card">
-<h3>➕ Create Character</h3>
+<h3>Create Character</h3>
+
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
 <input type="color" id="color" value="#6c5ce7">
 <input type="range" id="size" min="40" max="120" value="70">
-<button onclick="createChar()">Create</button>
+
+<select id="traitSel"></select>
+<button onclick="addTrait()">Add Trait</button>
+<button onclick="addCustomTrait()">Custom Trait</button>
+
+<div id="traitList"></div>
+
+<button onclick="createChar()">CREATE</button>
 </div>
 
 <div class="card">
-<button onclick="openRel()">🧵 Add Relationship</button>
+<h3>Timeline</h3>
+<input id="year" placeholder="Year">
+<input id="event" placeholder="Event">
+<button onclick="addEvent()">Add</button>
+<div id="timeline"></div>
+</div>
+
+<div class="card">
+<button onclick="createRel()">Quick Relationship (first 2 chars)</button>
 </div>
 
 <div id="mapWrap">
@@ -102,202 +99,182 @@ border-radius:10px;
 </div>
 </div>
 
-<div id="info" class="panel" style="display:none"></div>
-
-<div id="edit" class="modal" style="display:none">
-<h3>✏️ Edit</h3>
-<input id="eName">
-<textarea id="eDesc"></textarea>
-<input type="color" id="eColor">
-<input type="range" id="eSize">
-<button onclick="saveEdit()">💾 Save</button>
-<button onclick="closeEdit()">❌ Cancel</button>
-</div>
-
-<div id="rel" class="modal" style="display:none">
-<select id="rA"></select>
-<select id="rB"></select>
-<select id="rType"></select>
-<input type="color" id="rColor">
-<button onclick="createRel()">Create</button>
-<button onclick="closeRel()">Cancel</button>
-</div>
-
 <script>
 
-let data={chars:[],rels:[]};
-let editId=null;
+let TRAITS=["Brave","Calm","Smart","Funny"];
+let tempTraits=[];
 
-// THEME
-function toggleTheme(){document.body.classList.toggle("light");}
+let data={
+chars:[],
+rels:[],
+timeline:[]
+};
 
-// CREATE
+// TRAITS
+function addTrait(){
+let t=document.getElementById("traitSel").value;
+if(!tempTraits.includes(t)) tempTraits.push(t);
+renderTraits();
+}
+
+function addCustomTrait(){
+let t=prompt("Trait:");
+if(!t)return;
+TRAITS.push(t);
+TRAITS=[...new Set(TRAITS)].sort();
+render();
+}
+
+function renderTraits(){
+traitList.innerHTML=tempTraits.map((t,i)=>
+t+" <button onclick='removeTrait("+i+")'>x</button>"
+).join("<br>");
+}
+
+function removeTrait(i){
+tempTraits.splice(i,1);
+renderTraits();
+}
+
+// CREATE CHARACTER (FIXED)
 function createChar(){
-if(!name.value.trim()) return alert("Enter name");
+let n=document.getElementById("name").value.trim();
+if(n===""){alert("Type a name");return;}
 
-data.chars.push({
+let c={
 id:Date.now(),
-name:name.value,
-desc:desc.value,
-color:color.value,
-size:+size.value,
-x:200,y:200
+name:n,
+desc:document.getElementById("desc").value,
+color:document.getElementById("color").value,
+size:parseInt(document.getElementById("size").value),
+traits:[...tempTraits],
+x:200,
+y:200
+};
+
+data.chars.push(c);
+
+// reset
+document.getElementById("name").value="";
+document.getElementById("desc").value="";
+tempTraits=[];
+renderTraits();
+
+render();
+}
+
+// TIMELINE (FIXED)
+function addEvent(){
+let e=document.getElementById("event").value;
+if(e==="")return;
+
+data.timeline.push({
+year:parseInt(document.getElementById("year").value)||0,
+text:e
 });
 
-name.value="";
-desc.value="";
 render();
 }
 
-// INFO
-function showInfo(c){
-info.style.display="block";
-info.innerHTML=`
-<h3>${c.name}</h3>
-<p>${c.desc}</p>
-<button onclick="openEdit(${c.id})">✏️ Edit</button>
-`;
-}
-
-// EDIT
-function openEdit(id){
-let c=data.chars.find(x=>x.id===id);
-editId=id;
-
-eName.value=c.name;
-eDesc.value=c.desc;
-eColor.value=c.color;
-eSize.value=c.size;
-
-edit.style.display="block";
-}
-
-function saveEdit(){
-let c=data.chars.find(x=>x.id===editId);
-
-c.name=eName.value;
-c.desc=eDesc.value;
-c.color=eColor.value;
-c.size=+eSize.value;
-
-closeEdit();
-render();
-}
-
-function closeEdit(){edit.style.display="none";}
-
-// REL
-function openRel(){
-rel.style.display="block";
-let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
-rA.innerHTML=opts;
-rB.innerHTML=opts;
-rType.innerHTML=`<option>Friend</option><option>Enemy</option>`;
-}
-
-function closeRel(){rel.style.display="none";}
-
+// RELATIONSHIP (simple but working)
 function createRel(){
+if(data.chars.length<2)return alert("Need 2 chars");
+
 data.rels.push({
-a:+rA.value,
-b:+rB.value,
-type:rType.value,
-color:rColor.value
+a:data.chars[0].id,
+b:data.chars[1].id
 });
-closeRel();
+
 render();
 }
 
 // RENDER
 function render(){
 
-charList.innerHTML=data.chars.map(c=>
-`<div>${c.name}</div>`
-).join("");
+// traits dropdown
+traitSel.innerHTML=TRAITS.sort().map(t=>`<option>${t}</option>`).join("");
+
+// char list
+charList.innerHTML=data.chars.map(c=>c.name).join("<br>");
+
+// timeline
+timeline.innerHTML=data.timeline
+.sort((a,b)=>a.year-b.year)
+.map((e,i)=>`${e.year} - ${e.text} <button onclick='delEvent(${i})'>x</button>`)
+.join("<br>");
 
 renderMap();
+}
+
+function delEvent(i){
+data.timeline.splice(i,1);
+render();
 }
 
 // MAP
 function renderMap(){
 map.innerHTML="";
 
-// REL LINES
-data.rels.forEach((r,i)=>{
+// lines
+data.rels.forEach(r=>{
 let a=data.chars.find(c=>c.id===r.a);
 let b=data.chars.find(c=>c.id===r.b);
+if(!a||!b)return;
 
-let ax=a.x+a.size/2, ay=a.y+a.size/2;
-let bx=b.x+b.size/2, by=b.y+b.size/2;
+let ax=a.x+a.size/2;
+let ay=a.y+a.size/2;
+let bx=b.x+b.size/2;
+let by=b.y+b.size/2;
 
-let dx=bx-ax, dy=by-ay;
+let dx=bx-ax,dy=by-ay;
 let dist=Math.sqrt(dx*dx+dy*dy);
 let angle=Math.atan2(dy,dx)*180/Math.PI;
 
 let line=document.createElement("div");
 line.className="line";
-line.style.background=r.color;
 line.style.width=dist+"px";
 line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-line.onclick=()=>{
-data.rels.splice(i,1);
-render();
-};
-
 map.appendChild(line);
 });
 
-// NODES
+// nodes
 data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
 node.innerText=c.name;
+
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
 node.style.width=c.size+"px";
 node.style.height=c.size+"px";
 node.style.background=c.color;
 
-let dragging=false;
-
+// drag
 node.onmousedown=e=>{
-let startX=e.pageX;
-let startY=e.pageY;
+let ox=e.offsetX,oy=e.offsetY;
 
 function move(ev){
-if(Math.abs(ev.pageX-startX)>5 || Math.abs(ev.pageY-startY)>5){
-dragging=true;
-c.x=ev.pageX-map.offsetLeft-c.size/2;
-c.y=ev.pageY-map.offsetTop-c.size/2;
+c.x=ev.pageX-map.offsetLeft-ox;
+c.y=ev.pageY-map.offsetTop-oy;
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
-renderMap();
-}
-}
-
-function up(ev){
-document.removeEventListener("mousemove",move);
-document.removeEventListener("mouseup",up);
-
-if(!dragging){
-showInfo(c);
-}
-dragging=false;
 }
 
 document.addEventListener("mousemove",move);
-document.addEventListener("mouseup",up);
+document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
 };
 
 map.appendChild(node);
 });
 }
 
+// INIT
 render();
 
 </script>
+
 </body>
 </html>
