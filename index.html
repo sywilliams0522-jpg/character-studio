@@ -1,178 +1,246 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>📚 Character Studio</title>
+<title>Character Studio</title>
 
 <style>
 :root{
 --bg:#0d0d0d;
---text:#ffffff;
+--text:#fff;
 --card:#1a1a1a;
 }
 
-body{margin:0;font-family:Segoe UI;background:var(--bg);color:var(--text)}
-.light{--bg:#ffffff;--text:#000000;--card:#f0f0f0;}
+.light{
+--bg:#fff;
+--text:#000;
+--card:#f0f0f0;
+}
 
-header{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #444}
+body{
+margin:0;
+font-family:Segoe UI;
+background:var(--bg);
+color:var(--text);
+}
 
-.container{display:flex;height:calc(100vh - 50px)}
-.sidebar{width:260px;border-right:1px solid #444;padding:10px}
-.main{flex:1;padding:10px}
+header{
+display:flex;
+justify-content:space-between;
+padding:10px;
+border-bottom:1px solid #444;
+}
 
-.card{background:var(--card);border:1px solid #444;border-radius:10px;padding:10px;margin-bottom:10px}
+.container{
+display:flex;
+height:calc(100vh - 50px);
+}
 
-button{background:#2d2d2d;color:white;border:none;padding:6px;border-radius:6px;cursor:pointer}
+.sidebar{
+width:250px;
+border-right:1px solid #444;
+padding:10px;
+overflow:auto;
+}
 
-input,select,textarea{width:100%;margin:5px 0;padding:5px;border-radius:6px;border:1px solid #444;background:#111;color:white}
+.main{
+flex:1;
+padding:10px;
+overflow:auto;
+}
 
-.light input,.light textarea,.light select{background:white;color:black}
+.card{
+background:var(--card);
+padding:10px;
+margin-bottom:10px;
+border-radius:10px;
+}
 
-#map{height:400px;border:1px solid #444;position:relative;border-radius:10px}
+button{
+padding:6px;
+margin-top:5px;
+cursor:pointer;
+}
 
-.node{position:absolute;border-radius:8px;text-align:center;cursor:grab;display:flex;align-items:center;justify-content:center;color:white}
+#mapWrapper{
+height:500px;
+overflow:auto;
+border:1px solid #444;
+}
 
-.line{position:absolute;height:3px;transform-origin:left center}
+#map{
+width:2000px;
+height:1500px;
+position:relative;
+}
 
-.modal{position:fixed;top:20%;left:35%;background:#222;padding:15px;border-radius:10px}
+.node{
+position:absolute;
+border-radius:8px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:grab;
+color:white;
+z-index:2;
+}
+
+.line{
+position:absolute;
+height:3px;
+transform-origin:left center;
+z-index:3; /* ABOVE nodes */
+}
+
+.label{
+position:absolute;
+font-size:12px;
+z-index:3;
+}
+
+.panel{
+position:fixed;
+top:20%;
+right:10px;
+width:250px;
+background:#222;
+padding:10px;
+border-radius:10px;
+}
+
+.modal{
+position:fixed;
+top:20%;
+left:35%;
+background:#222;
+padding:15px;
+border-radius:10px;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-📚 Character Studio
+Character Studio
 <button onclick="toggleTheme()">🌙 / ☀️</button>
 </header>
 
 <div class="container">
 
 <div class="sidebar">
-<h3>👥 Characters</h3>
+<h3>Characters</h3>
 <div id="charList"></div>
 </div>
 
 <div class="main">
 
 <div class="card">
-<h3>➕ Create Character</h3>
-<input id="charName" placeholder="Name">
-<textarea id="charDesc" placeholder="Description"></textarea>
-<input type="color" id="charColor" value="#6c5ce7">
-<label>Size</label>
-<input type="range" id="charSize" min="40" max="120" value="70">
+<input id="name" placeholder="Name">
+<textarea id="desc"></textarea>
+<input type="color" id="color" value="#6c5ce7">
+<input type="range" id="size" min="40" max="120" value="70">
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
 <button onclick="addCustomTrait()">+ Custom</button>
 
-<div id="traitList"></div>
+<div id="traits"></div>
 
 <button onclick="createChar()">Create</button>
 </div>
 
 <div class="card">
-<button onclick="openRel()">🧵 Add Relationship</button>
+<button onclick="openRel()">Add Relationship</button>
 </div>
 
-<div class="card">
+<div id="mapWrapper">
 <div id="map"></div>
 </div>
 
 </div>
 </div>
 
-<!-- EDIT MODAL -->
-<div id="editModal" class="modal" style="display:none">
-<h3>Edit Character</h3>
+<div id="infoPanel" class="panel" style="display:none"></div>
 
+<div id="editModal" class="modal" style="display:none">
 <input id="editName">
 <textarea id="editDesc"></textarea>
 <input type="color" id="editColor">
-<input type="range" id="editSize" min="40" max="120">
-
-<select id="editTraitSel"></select>
-<button onclick="addEditTrait()">Add Trait</button>
-<button onclick="addCustomTraitEdit()">+ Custom</button>
-
-<div id="editTraits"></div>
+<input type="range" id="editSize">
 
 <button onclick="saveEdit()">Save</button>
 <button onclick="closeEdit()">Cancel</button>
 </div>
 
-<!-- REL -->
-<div id="relUI" class="modal" style="display:none">
+<div id="relModal" class="modal" style="display:none">
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
 <button onclick="addCustomRel()">+ Custom</button>
-<input type="color" id="rColor" value="#ff0000">
+<input type="color" id="rColor">
 <button onclick="createRel()">Create</button>
 <button onclick="closeRel()">Cancel</button>
 </div>
 
 <script>
 
-let TRAITS=["Brave","Calm","Creative","Funny","Kind","Smart"].sort();
-let REL=["Friend","Enemy","Sibling"];
+let TRAITS=["Brave","Calm","Smart","Funny"];
+let REL=["Friend","Enemy"];
 
 let data={chars:[],rels:[]};
-
 let tempTraits=[];
 let editId=null;
 
 // THEME
 function toggleTheme(){document.body.classList.toggle("light");}
 
-// CREATE
-
+// TRAITS
 function addTrait(){
 let t=traitSel.value;
 if(!tempTraits.includes(t)) tempTraits.push(t);
-renderTemp();
+traits.innerHTML=tempTraits.join(", ");
 }
 
 function addCustomTrait(){
-let t=prompt("New trait:");
+let t=prompt("New trait");
 if(!t)return;
 TRAITS.push(t);
 TRAITS=[...new Set(TRAITS)].sort();
 render();
 }
 
-function renderTemp(){
-traitList.innerHTML=tempTraits.map((t,i)=>
-`${t} <button onclick="removeTemp(${i})">❌</button>`
-).join("<br>");
-}
-
-function removeTemp(i){
-tempTraits.splice(i,1);
-renderTemp();
-}
-
+// CREATE
 function createChar(){
-let n=charName.value.trim();
-if(!n)return alert("Enter name");
+if(!name.value.trim())return;
 
 data.chars.push({
 id:Date.now(),
-name:n,
-desc:charDesc.value,
-color:charColor.value,
-size:+charSize.value,
+name:name.value,
+desc:desc.value,
+color:color.value,
+size:+size.value,
 traits:[...tempTraits],
-x:150,y:150
+x:200,y:200
 });
 
-charName.value="";
-charDesc.value="";
+name.value="";
+desc.value="";
 tempTraits=[];
 render();
 }
 
-// EDIT
+// INFO PANEL
+function showInfo(c){
+infoPanel.style.display="block";
+infoPanel.innerHTML=`
+<h3>${c.name}</h3>
+<p>${c.desc}</p>
+<p>${c.traits.join(", ")}</p>
+<button onclick="openEdit(${c.id})">Edit</button>
+`;
+}
 
+// EDIT
 function openEdit(id){
 let c=data.chars.find(x=>x.id===id);
 editId=id;
@@ -182,37 +250,7 @@ editDesc.value=c.desc;
 editColor.value=c.color;
 editSize.value=c.size;
 
-renderEditTraits(c);
-
 editModal.style.display="block";
-}
-
-function renderEditTraits(c){
-editTraits.innerHTML=c.traits.map((t,i)=>
-`${t} <button onclick="removeEditTrait(${i})">❌</button>`
-).join("<br>");
-}
-
-function removeEditTrait(i){
-let c=data.chars.find(x=>x.id===editId);
-c.traits.splice(i,1);
-renderEditTraits(c);
-}
-
-function addEditTrait(){
-let t=editTraitSel.value;
-let c=data.chars.find(x=>x.id===editId);
-if(!c.traits.includes(t)) c.traits.push(t);
-renderEditTraits(c);
-}
-
-function addCustomTraitEdit(){
-let t=prompt("New trait:");
-if(!t)return;
-TRAITS.push(t);
-TRAITS=[...new Set(TRAITS)].sort();
-render();
-openEdit(editId);
 }
 
 function saveEdit(){
@@ -232,20 +270,20 @@ editModal.style.display="none";
 }
 
 // REL
-
 function openRel(){
-relUI.style.display="block";
+relModal.style.display="block";
 
 let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
+
 rA.innerHTML=opts;
 rB.innerHTML=opts;
 rType.innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
 }
 
-function closeRel(){relUI.style.display="none";}
+function closeRel(){relModal.style.display="none";}
 
 function addCustomRel(){
-let r=prompt("New relationship:");
+let r=prompt("New relation");
 if(!r)return;
 REL.push(r);
 REL=[...new Set(REL)];
@@ -263,34 +301,31 @@ closeRel();
 render();
 }
 
-// DELETE REL (click line)
-
 // RENDER
-
 function render(){
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
-editTraitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
 
 charList.innerHTML=data.chars.map(c=>
-`<div onclick="openEdit(${c.id})">${c.name}</div>`
+`<div>${c.name}</div>`
 ).join("");
 
 renderMap();
 }
 
 // MAP
-
 function renderMap(){
 map.innerHTML="";
 
+// LINES FIRST (so they sit above via z-index)
 data.rels.forEach((r,i)=>{
 let a=data.chars.find(c=>c.id===r.a);
 let b=data.chars.find(c=>c.id===r.b);
-if(!a||!b)return;
 
-let ax=a.x+a.size/2, ay=a.y+a.size/2;
-let bx=b.x+b.size/2, by=b.y+b.size/2;
+let ax=a.x+a.size/2;
+let ay=a.y+a.size/2;
+let bx=b.x+b.size/2;
+let by=b.y+b.size/2;
 
 let dx=bx-ax,dy=by-ay;
 let dist=Math.sqrt(dx*dx+dy*dy);
@@ -304,33 +339,38 @@ line.style.left=ax+"px";
 line.style.top=ay+"px";
 line.style.transform=`rotate(${angle}deg)`;
 
-let label=document.createElement("div");
-label.innerText=r.type;
-label.style.position="absolute";
-label.style.left=(ax+bx)/2+"px";
-label.style.top=(ay+by)/2+"px";
-
+// DELETE ON CLICK
 line.onclick=()=>{
 data.rels.splice(i,1);
 render();
 };
 
+let label=document.createElement("div");
+label.className="label";
+label.innerText=r.type;
+label.style.left=(ax+bx)/2+"px";
+label.style.top=(ay+by)/2+"px";
+
 map.appendChild(line);
 map.appendChild(label);
 });
 
+// NODES
 data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
 node.innerText=c.name;
 node.style.left=c.x+"px";
 node.style.top=c.y+"px";
-node.style.background=c.color;
 node.style.width=c.size+"px";
 node.style.height=c.size+"px";
+node.style.background=c.color;
 
+node.onclick=()=>showInfo(c);
+
+// DRAG
 node.onmousedown=e=>{
-let ox=e.offsetX,oy=e.offsetY;
+let ox=e.offsetX, oy=e.offsetY;
 
 function move(ev){
 c.x=ev.pageX-map.offsetLeft-ox;
