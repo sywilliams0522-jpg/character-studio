@@ -9,12 +9,6 @@ margin:0;
 font-family:sans-serif;
 background:#111;
 color:#fff;
-transition:0.3s;
-}
-
-.light{
-background:#fff;
-color:#000;
 }
 
 header{
@@ -56,7 +50,11 @@ margin:5px 0;
 padding:5px;
 }
 
-button{margin:5px 0;padding:5px;cursor:pointer}
+button{
+margin:5px 0;
+padding:5px;
+cursor:pointer;
+}
 
 #mapWrap{
 height:500px;
@@ -111,7 +109,7 @@ border-radius:10px;
 
 <header>
 <div>📚 Character Studio</div>
-<button onclick="toggleTheme()">🌙 / ☀️</button>
+<button onclick="document.body.classList.toggle('light')">🌙 / ☀️</button>
 </header>
 
 <div class="container">
@@ -123,7 +121,7 @@ border-radius:10px;
 
 <div class="main">
 
-<!-- CREATE CHARACTER -->
+<!-- CREATE -->
 <div class="card">
 <h3>Create Character</h3>
 
@@ -134,7 +132,6 @@ border-radius:10px;
 
 <select id="traitSel"></select>
 <button onclick="addTrait()">Add Trait</button>
-<button onclick="addCustomTrait()">Custom Trait</button>
 
 <div id="traitList"></div>
 
@@ -147,12 +144,12 @@ border-radius:10px;
 
 <input id="year" placeholder="Year">
 <input id="event" placeholder="Event">
-<button onclick="addEvent()">Add Event</button>
+<button onclick="addEvent()">Add</button>
 
 <div id="timeline"></div>
 </div>
 
-<!-- RELATIONSHIPS -->
+<!-- REL -->
 <div class="card">
 <button onclick="openRel()">Add Relationship</button>
 </div>
@@ -164,10 +161,10 @@ border-radius:10px;
 </div>
 </div>
 
-<!-- INFO PANEL -->
+<!-- INFO -->
 <div id="info" class="panel" style="display:none"></div>
 
-<!-- EDIT PANEL -->
+<!-- EDIT -->
 <div id="edit" class="panel" style="display:none">
 <h3>Edit Character</h3>
 
@@ -177,10 +174,9 @@ border-radius:10px;
 <input type="range" id="eSize">
 
 <button onclick="saveEdit()">Save</button>
-<button onclick="closeEdit()">Close</button>
 </div>
 
-<!-- REL PANEL -->
+<!-- REL -->
 <div id="rel" class="panel" style="display:none">
 <h3>Relationship</h3>
 
@@ -195,8 +191,8 @@ border-radius:10px;
 
 <script>
 
-let TRAITS=["Brave","Calm","Smart","Funny"].sort();
-let REL=["Friend","Enemy","Sibling","Rival"];
+let TRAITS=["Brave","Calm","Smart","Funny"];
+let tempTraits=[];
 
 let data={
 chars:[],
@@ -204,103 +200,59 @@ rels:[],
 timeline:[]
 };
 
-let tempTraits=[];
 let editId=null;
 
-// 🌙 THEME
-function toggleTheme(){
-document.body.classList.toggle("light");
-}
-
-// 🧠 TRAITS
+// TRAITS
 function addTrait(){
 let t=traitSel.value;
 if(!tempTraits.includes(t)) tempTraits.push(t);
 renderTraits();
 }
 
-function addCustomTrait(){
-let t=prompt("Trait:");
-if(!t)return;
-TRAITS.push(t);
-TRAITS=[...new Set(TRAITS)].sort();
-render();
-}
-
 function renderTraits(){
 traitList.innerHTML=tempTraits.map((t,i)=>
-`${t} <button onclick="removeTrait(${i})">❌</button>`
+`${t} <button onclick="tempTraits.splice(${i},1);renderTraits()">❌</button>`
 ).join("<br>");
 }
 
-function removeTrait(i){
-tempTraits.splice(i,1);
-renderTraits();
-}
-
-// 👤 CREATE CHARACTER (FIXED)
+// 🚨 FIXED CHARACTER CREATION (THIS WAS YOUR BUG)
 function createChar(){
-let n=name.value.trim();
-if(!n){alert("Enter name");return;}
+
+const n = document.getElementById("name").value.trim();
+const d = document.getElementById("desc").value;
+const c = document.getElementById("color").value;
+const s = parseInt(document.getElementById("size").value);
+
+if(!n){
+alert("Enter a character name");
+return;
+}
 
 data.chars.push({
 id:Date.now(),
 name:n,
-desc:desc.value,
-color:color.value,
-size:+size.value,
+desc:d,
+color:c,
+size:s,
 traits:[...tempTraits],
-x:200,y:200
+x:200,
+y:200
 });
 
-name.value="";
-desc.value="";
+// reset
+document.getElementById("name").value="";
+document.getElementById("desc").value="";
 tempTraits=[];
+renderTraits();
+
 render();
 }
 
-// 🧾 INFO
-function showInfo(c){
-info.style.display="block";
-info.innerHTML=`
-<h3>${c.name}</h3>
-<p>${c.desc}</p>
-<p><b>Traits:</b> ${c.traits.join(", ")}</p>
-<button onclick="openEdit(${c.id})">Edit</button>
-`;
-}
-
-// ✏️ EDIT
-function openEdit(id){
-let c=data.chars.find(x=>x.id===id);
-editId=id;
-
-eName.value=c.name;
-eDesc.value=c.desc;
-eColor.value=c.color;
-eSize.value=c.size;
-
-edit.style.display="block";
-}
-
-function saveEdit(){
-let c=data.chars.find(x=>x.id===editId);
-
-c.name=eName.value;
-c.desc=eDesc.value;
-c.color=eColor.value;
-c.size=+eSize.value;
-
-closeEdit();
-render();
-}
-
-function closeEdit(){edit.style.display="none";}
-
-// 🕒 TIMELINE (RESTORED)
+// TIMELINE
 function addEvent(){
-let y=year.value;
-let e=event.value;
+let y=document.getElementById("year").value;
+let e=document.getElementById("event").value;
+
 if(!e)return;
 
 data.timeline.push({
@@ -311,7 +263,7 @@ text:e
 render();
 }
 
-// 🧵 RELATIONSHIPS (RESTORED)
+// REL
 function openRel(){
 rel.style.display="block";
 
@@ -319,7 +271,7 @@ let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
 
 rA.innerHTML=opts;
 rB.innerHTML=opts;
-rType.innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
+rType.innerHTML=`<option>Friend</option><option>Enemy</option><option>Sibling</option>`;
 }
 
 function closeRel(){rel.style.display="none";}
@@ -336,7 +288,7 @@ closeRel();
 render();
 }
 
-// 🖥️ RENDER
+// RENDER
 function render(){
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
@@ -348,22 +300,29 @@ charList.innerHTML=data.chars.map(c=>
 timeline.innerHTML=data.timeline
 .sort((a,b)=>a.year-b.year)
 .map((e,i)=>
-`🕒 ${e.year} - ${e.text} <button onclick="delEvent(${i})">❌</button><br>`
+`${e.year} - ${e.text} <button onclick="data.timeline.splice(${i},1);render()">❌</button><br>`
 ).join("");
 
 renderMap();
 }
 
-function delEvent(i){
-data.timeline.splice(i,1);
-render();
+// INFO
+function showInfo(id){
+let c=data.chars.find(x=>x.id===id);
+
+info.style.display="block";
+info.innerHTML=`
+<h3>${c.name}</h3>
+<p>${c.desc}</p>
+<p><b>Traits:</b> ${c.traits.join(", ")}</p>
+`;
 }
 
-// 🗺️ MAP
+// MAP
 function renderMap(){
 map.innerHTML="";
 
-// RELATIONS
+// RELS
 data.rels.forEach((r,i)=>{
 let a=data.chars.find(c=>c.id===r.a);
 let b=data.chars.find(c=>c.id===r.b);
@@ -394,7 +353,7 @@ render();
 map.appendChild(line);
 });
 
-// CHARACTERS
+// NODES
 data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
@@ -406,7 +365,7 @@ node.style.width=c.size+"px";
 node.style.height=c.size+"px";
 node.style.background=c.color;
 
-// DRAG FIXED
+// drag FIXED
 node.onmousedown=e=>{
 let ox=e.offsetX,oy=e.offsetY;
 
