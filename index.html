@@ -29,6 +29,7 @@ align-items:center;
 justify-content:center;
 cursor:grab;
 color:#fff;
+user-select:none;
 }
 
 .line{
@@ -51,7 +52,7 @@ top:100px;
 background:#222;
 padding:10px;
 border-radius:10px;
-width:250px;
+width:260px;
 }
 
 .modal{
@@ -83,27 +84,11 @@ border-radius:10px;
 
 <div class="card">
 <h3>➕ Create Character</h3>
-
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
 <input type="color" id="color" value="#6c5ce7">
 <input type="range" id="size" min="40" max="120" value="70">
-
-<select id="traitSel"></select>
-<button onclick="addTrait()">➕ Trait</button>
-<button onclick="addCustomTrait()">✨ Custom</button>
-
-<div id="traitList"></div>
-
-<button onclick="createChar()">✅ Create</button>
-</div>
-
-<div class="card">
-<h3>🕒 Timeline</h3>
-<input id="year" placeholder="Year">
-<input id="event" placeholder="Event">
-<button onclick="addEvent()">➕ Add</button>
-<div id="timeline"></div>
+<button onclick="createChar()">Create</button>
 </div>
 
 <div class="card">
@@ -120,103 +105,58 @@ border-radius:10px;
 <div id="info" class="panel" style="display:none"></div>
 
 <div id="edit" class="modal" style="display:none">
-<h3>✏️ Edit Character</h3>
+<h3>✏️ Edit</h3>
 <input id="eName">
 <textarea id="eDesc"></textarea>
 <input type="color" id="eColor">
 <input type="range" id="eSize">
-
-<select id="eTraitSel"></select>
-<button onclick="addEditTrait()">➕ Trait</button>
-
-<div id="eTraits"></div>
-
 <button onclick="saveEdit()">💾 Save</button>
 <button onclick="closeEdit()">❌ Cancel</button>
 </div>
 
 <div id="rel" class="modal" style="display:none">
-<h3>🧵 Relationship</h3>
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
-<button onclick="addCustomRel()">✨ Custom</button>
 <input type="color" id="rColor">
-<button onclick="createRel()">✅ Create</button>
-<button onclick="closeRel()">❌ Cancel</button>
+<button onclick="createRel()">Create</button>
+<button onclick="closeRel()">Cancel</button>
 </div>
 
 <script>
 
-let TRAITS=["Brave","Calm","Smart","Funny"].sort();
-let REL=["Friend","Enemy"];
-
-let data={chars:[],rels:[],timeline:[]};
-let tempTraits=[];
+let data={chars:[],rels:[]};
 let editId=null;
 
 // THEME
 function toggleTheme(){document.body.classList.toggle("light");}
 
-// TRAITS
-function addTrait(){
-let t=traitSel.value;
-if(!tempTraits.includes(t)) tempTraits.push(t);
-renderTemp();
-}
-
-function addCustomTrait(){
-let t=prompt("New trait:");
-if(!t)return;
-TRAITS.push(t);
-TRAITS=[...new Set(TRAITS)].sort();
-render();
-}
-
-function renderTemp(){
-traitList.innerHTML=tempTraits.map((t,i)=>
-`${t} <button onclick="tempTraits.splice(${i},1);renderTemp()">❌</button>`
-).join("<br>");
-}
-
-// CREATE CHARACTER
+// CREATE
 function createChar(){
-let n=document.getElementById("name").value.trim();
-if(!n)return alert("Enter name");
+if(!name.value.trim()) return alert("Enter name");
 
 data.chars.push({
 id:Date.now(),
-name:n,
+name:name.value,
 desc:desc.value,
 color:color.value,
 size:+size.value,
-traits:[...tempTraits],
 x:200,y:200
 });
 
 name.value="";
 desc.value="";
-tempTraits=[];
 render();
 }
 
-// INFO PANEL
+// INFO
 function showInfo(c){
 info.style.display="block";
 info.innerHTML=`
 <h3>${c.name}</h3>
 <p>${c.desc}</p>
-<p>${c.traits.join(", ")}</p>
 <button onclick="openEdit(${c.id})">✏️ Edit</button>
-<button onclick="deleteChar(${c.id})">🗑️ Delete</button>
 `;
-}
-
-// DELETE CHARACTER
-function deleteChar(id){
-data.chars=data.chars.filter(c=>c.id!==id);
-data.rels=data.rels.filter(r=>r.a!==id && r.b!==id);
-render();
 }
 
 // EDIT
@@ -229,69 +169,33 @@ eDesc.value=c.desc;
 eColor.value=c.color;
 eSize.value=c.size;
 
-renderEditTraits(c);
-
 edit.style.display="block";
-}
-
-function renderEditTraits(c){
-eTraits.innerHTML=c.traits.map((t,i)=>
-`${t} <button onclick="c.traits.splice(${i},1);renderEditTraits(c)">❌</button>`
-).join("<br>");
-}
-
-function addEditTrait(){
-let t=eTraitSel.value;
-let c=data.chars.find(x=>x.id===editId);
-if(!c.traits.includes(t)) c.traits.push(t);
-renderEditTraits(c);
 }
 
 function saveEdit(){
 let c=data.chars.find(x=>x.id===editId);
+
 c.name=eName.value;
 c.desc=eDesc.value;
 c.color=eColor.value;
 c.size=+eSize.value;
+
 closeEdit();
 render();
 }
 
 function closeEdit(){edit.style.display="none";}
 
-// TIMELINE
-function addEvent(){
-let e=document.getElementById("event").value;
-if(!e)return;
-
-data.timeline.push({
-year:+year.value||0,
-text:e
-});
-
-render();
-}
-
-// RELATIONSHIP
+// REL
 function openRel(){
 rel.style.display="block";
-
 let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
-
 rA.innerHTML=opts;
 rB.innerHTML=opts;
-rType.innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
+rType.innerHTML=`<option>Friend</option><option>Enemy</option>`;
 }
 
 function closeRel(){rel.style.display="none";}
-
-function addCustomRel(){
-let r=prompt("New type");
-if(!r)return;
-REL.push(r);
-REL=[...new Set(REL)];
-openRel();
-}
 
 function createRel(){
 data.rels.push({
@@ -307,18 +211,8 @@ render();
 // RENDER
 function render(){
 
-traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
-eTraitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`);
-
 charList.innerHTML=data.chars.map(c=>
-`<div onclick="showInfo(${JSON.stringify(c).replace(/"/g,'&quot;')})">${c.name}</div>`
-).join("");
-
-timeline.innerHTML=data.timeline
-.sort((a,b)=>a.year-b.year)
-.map((e,i)=>
-`<div>🕒 ${e.year} - ${e.text} 
-<button onclick="data.timeline.splice(${i},1);render()">❌</button></div>`
+`<div>${c.name}</div>`
 ).join("");
 
 renderMap();
@@ -328,6 +222,7 @@ renderMap();
 function renderMap(){
 map.innerHTML="";
 
+// REL LINES
 data.rels.forEach((r,i)=>{
 let a=data.chars.find(c=>c.id===r.a);
 let b=data.chars.find(c=>c.id===r.b);
@@ -352,16 +247,10 @@ data.rels.splice(i,1);
 render();
 };
 
-let label=document.createElement("div");
-label.className="label";
-label.innerText=r.type;
-label.style.left=(ax+bx)/2+"px";
-label.style.top=(ay+by)/2+"px";
-
 map.appendChild(line);
-map.appendChild(label);
 });
 
+// NODES
 data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
@@ -372,26 +261,41 @@ node.style.width=c.size+"px";
 node.style.height=c.size+"px";
 node.style.background=c.color;
 
-node.onclick=()=>showInfo(c);
+let dragging=false;
 
 node.onmousedown=e=>{
-let ox=e.offsetX, oy=e.offsetY;
+let startX=e.pageX;
+let startY=e.pageY;
 
 function move(ev){
-c.x=ev.pageX-map.offsetLeft-ox;
-c.y=ev.pageY-map.offsetTop-oy;
+if(Math.abs(ev.pageX-startX)>5 || Math.abs(ev.pageY-startY)>5){
+dragging=true;
+c.x=ev.pageX-map.offsetLeft-c.size/2;
+c.y=ev.pageY-map.offsetTop-c.size/2;
+node.style.left=c.x+"px";
+node.style.top=c.y+"px";
 renderMap();
+}
+}
+
+function up(ev){
+document.removeEventListener("mousemove",move);
+document.removeEventListener("mouseup",up);
+
+if(!dragging){
+showInfo(c);
+}
+dragging=false;
 }
 
 document.addEventListener("mousemove",move);
-document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
+document.addEventListener("mouseup",up);
 };
 
 map.appendChild(node);
 });
 }
 
-// INIT
 render();
 
 </script>
