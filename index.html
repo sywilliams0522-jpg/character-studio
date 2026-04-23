@@ -44,8 +44,23 @@ user-select:none;
 position:absolute;
 height:3px;
 transform-origin:left;
-background:red;
 z-index:10;
+}
+
+.label{
+position:absolute;
+font-size:12px;
+z-index:11;
+}
+
+.panel{
+position:fixed;
+right:10px;
+top:80px;
+width:250px;
+background:#222;
+padding:10px;
+border-radius:10px;
 }
 </style>
 </head>
@@ -77,15 +92,11 @@ z-index:10;
 
 <div id="traitList"></div>
 
-<button onclick="createChar()">CREATE</button>
+<button onclick="createChar()">Create</button>
 </div>
 
 <div class="card">
-<h3>Timeline</h3>
-<input id="year" placeholder="Year">
-<input id="event" placeholder="Event">
-<button onclick="addEvent()">Add</button>
-<div id="timeline"></div>
+<button onclick="openRel()">Add Relationship</button>
 </div>
 
 <div id="mapWrap">
@@ -95,16 +106,48 @@ z-index:10;
 </div>
 </div>
 
+<!-- INFO PANEL -->
+<div id="info" class="panel" style="display:none"></div>
+
+<!-- EDIT PANEL -->
+<div id="edit" class="panel" style="display:none">
+<h3>Edit Character</h3>
+
+<input id="eName">
+<textarea id="eDesc"></textarea>
+<input type="color" id="eColor">
+<input type="range" id="eSize">
+
+<select id="eTraitSel"></select>
+<button onclick="addEditTrait()">Add Trait</button>
+
+<div id="eTraits"></div>
+
+<button onclick="saveEdit()">Save</button>
+<button onclick="closeEdit()">Close</button>
+</div>
+
+<!-- REL PANEL -->
+<div id="rel" class="panel" style="display:none">
+<h3>Relationship</h3>
+
+<select id="rA"></select>
+<select id="rB"></select>
+<select id="rType"></select>
+<input type="color" id="rColor">
+
+<button onclick="createRel()">Create</button>
+<button onclick="closeRel()">Cancel</button>
+</div>
+
 <script>
 
 let TRAITS=["Brave","Calm","Smart","Funny"].sort();
-let tempTraits=[];
+let REL=["Friend","Enemy","Sibling","Rival"];
 
-let data={
-chars:[],
-rels:[],
-timeline:[]
-};
+let data={chars:[],rels:[]};
+let tempTraits=[];
+let editId=null;
 
 // TRAITS
 function addTrait(){
@@ -123,52 +166,111 @@ render();
 
 function renderTraits(){
 traitList.innerHTML=tempTraits.map((t,i)=>
-t+" <button onclick='removeTrait("+i+")'>x</button>"
+`${t} <button onclick="tempTraits.splice(${i},1);renderTraits()">❌</button>`
 ).join("<br>");
-}
-
-function removeTrait(i){
-tempTraits.splice(i,1);
-renderTraits();
 }
 
 // CREATE CHARACTER
 function createChar(){
-let n=document.getElementById("name").value.trim();
-if(n===""){alert("Type a name");return;}
+let n=name.value.trim();
+if(!n)return alert("Enter name");
 
-let c={
+data.chars.push({
 id:Date.now(),
 name:n,
-desc:document.getElementById("desc").value,
-color:document.getElementById("color").value,
-size:parseInt(document.getElementById("size").value),
+desc:desc.value,
+color:color.value,
+size:+size.value,
 traits:[...tempTraits],
-x:200,
-y:200
-};
+x:200,y:200
+});
 
-data.chars.push(c);
-
-// reset
-document.getElementById("name").value="";
-document.getElementById("desc").value="";
+name.value="";
+desc.value="";
 tempTraits=[];
-renderTraits();
-
 render();
 }
 
-// TIMELINE
-function addEvent(){
-let e=document.getElementById("event").value;
-if(e==="")return;
+// INFO VIEW
+function showInfo(c){
+info.style.display="block";
+info.innerHTML=`
+<h3>${c.name}</h3>
+<p>${c.desc}</p>
+<p><b>Traits:</b> ${c.traits.join(", ")}</p>
+<button onclick="openEdit(${c.id})">Edit</button>
+`;
+}
 
-data.timeline.push({
-year:parseInt(document.getElementById("year").value)||0,
-text:e
+// EDIT FIXED
+function openEdit(id){
+let c=data.chars.find(x=>x.id===id);
+editId=id;
+
+eName.value=c.name;
+eDesc.value=c.desc;
+eColor.value=c.color;
+eSize.value=c.size;
+
+renderEditTraits(c);
+
+edit.style.display="block";
+}
+
+function renderEditTraits(c){
+eTraits.innerHTML=c.traits.map((t,i)=>
+`${t} <button onclick="removeEditTrait(${i})">❌</button>`
+).join("<br>");
+}
+
+function removeEditTrait(i){
+let c=data.chars.find(x=>x.id===editId);
+c.traits.splice(i,1);
+renderEditTraits(c);
+}
+
+function addEditTrait(){
+let t=eTraitSel.value;
+let c=data.chars.find(x=>x.id===editId);
+if(!c.traits.includes(t)) c.traits.push(t);
+renderEditTraits(c);
+}
+
+function saveEdit(){
+let c=data.chars.find(x=>x.id===editId);
+
+c.name=eName.value;
+c.desc=eDesc.value;
+c.color=eColor.value;
+c.size=+eSize.value;
+
+closeEdit();
+render();
+}
+
+function closeEdit(){edit.style.display="none";}
+
+// RELATIONSHIPS FIXED
+function openRel(){
+rel.style.display="block";
+
+let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
+
+rA.innerHTML=opts;
+rB.innerHTML=opts;
+rType.innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
+}
+
+function closeRel(){rel.style.display="none";}
+
+function createRel(){
+data.rels.push({
+a:+rA.value,
+b:+rB.value,
+type:rType.value,
+color:rColor.value
 });
-
+closeRel();
 render();
 }
 
@@ -176,27 +278,58 @@ render();
 function render(){
 
 traitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
+eTraitSel.innerHTML=TRAITS.map(t=>`<option>${t}</option>`).join("");
 
-charList.innerHTML=data.chars.map(c=>c.name).join("<br>");
-
-timeline.innerHTML=data.timeline
-.sort((a,b)=>a.year-b.year)
-.map((e,i)=>`${e.year} - ${e.text} <button onclick='delEvent(${i})'>x</button>`)
-.join("<br>");
+charList.innerHTML=data.chars.map(c=>
+`<div onclick="showInfo(${c.id})">${c.name}</div>`
+).join("");
 
 renderMap();
-}
-
-function delEvent(i){
-data.timeline.splice(i,1);
-render();
 }
 
 // MAP
 function renderMap(){
 map.innerHTML="";
 
-// nodes
+// RELATIONS
+data.rels.forEach((r,i)=>{
+let a=data.chars.find(c=>c.id===r.a);
+let b=data.chars.find(c=>c.id===r.b);
+if(!a||!b)return;
+
+let ax=a.x+a.size/2;
+let ay=a.y+a.size/2;
+let bx=b.x+b.size/2;
+let by=b.y+b.size/2;
+
+let dx=bx-ax,dy=by-ay;
+let dist=Math.sqrt(dx*dx+dy*dy);
+let angle=Math.atan2(dy,dx)*180/Math.PI;
+
+let line=document.createElement("div");
+line.className="line";
+line.style.background=r.color;
+line.style.width=dist+"px";
+line.style.left=ax+"px";
+line.style.top=ay+"px";
+line.style.transform=`rotate(${angle}deg)`;
+
+line.onclick=()=>{
+data.rels.splice(i,1);
+render();
+};
+
+let label=document.createElement("div");
+label.className="label";
+label.innerText=r.type;
+label.style.left=(ax+bx)/2+"px";
+label.style.top=(ay+by)/2+"px";
+
+map.appendChild(line);
+map.appendChild(label);
+});
+
+// CHARACTERS
 data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
@@ -208,33 +341,18 @@ node.style.width=c.size+"px";
 node.style.height=c.size+"px";
 node.style.background=c.color;
 
-// FIXED DRAG (NO DISAPPEAR)
-node.onmousedown = e => {
-
-const rect = map.getBoundingClientRect();
-let ox = e.offsetX;
-let oy = e.offsetY;
+// drag
+node.onmousedown=e=>{
+let ox=e.offsetX,oy=e.offsetY;
 
 function move(ev){
-
-c.x = ev.clientX - rect.left + map.scrollLeft - ox;
-c.y = ev.clientY - rect.top + map.scrollTop - oy;
-
-// keep inside map
-c.x = Math.max(0, Math.min(c.x, map.clientWidth - c.size));
-c.y = Math.max(0, Math.min(c.y, map.clientHeight - c.size));
-
-node.style.left = c.x + "px";
-node.style.top = c.y + "px";
+c.x=ev.pageX-map.offsetLeft-ox;
+c.y=ev.pageY-map.offsetTop-oy;
+renderMap();
 }
 
-function up(){
-document.removeEventListener("mousemove", move);
-document.removeEventListener("mouseup", up);
-}
-
-document.addEventListener("mousemove", move);
-document.addEventListener("mouseup", up);
+document.addEventListener("mousemove",move);
+document.addEventListener("mouseup",()=>document.removeEventListener("mousemove",move),{once:true});
 };
 
 map.appendChild(node);
