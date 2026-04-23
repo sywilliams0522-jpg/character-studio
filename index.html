@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Character Studio</title>
+<title>📚 Character Studio</title>
 
 <style>
 body{margin:0;font-family:sans-serif;background:#111;color:#fff}
@@ -41,7 +41,7 @@ z-index:5;
 .label{
 position:absolute;
 font-size:12px;
-z-index:5;
+z-index:6;
 }
 
 .panel{
@@ -68,45 +68,46 @@ border-radius:10px;
 <body>
 
 <header>
-Character Studio
-<button onclick="toggleTheme()">🌙/☀️</button>
+📚 Character Studio
+<button onclick="toggleTheme()">🌙 / ☀️</button>
 </header>
 
 <div class="container">
 
 <div class="sidebar">
-<h3>Characters</h3>
+<h3>👥 Characters</h3>
 <div id="charList"></div>
 </div>
 
 <div class="main">
 
 <div class="card">
-<h3>Create Character</h3>
+<h3>➕ Create Character</h3>
+
 <input id="name" placeholder="Name">
 <textarea id="desc" placeholder="Description"></textarea>
 <input type="color" id="color" value="#6c5ce7">
 <input type="range" id="size" min="40" max="120" value="70">
 
 <select id="traitSel"></select>
-<button onclick="addTrait()">Add Trait</button>
-<button onclick="addCustomTrait()">+ Custom</button>
+<button onclick="addTrait()">➕ Trait</button>
+<button onclick="addCustomTrait()">✨ Custom</button>
 
 <div id="traitList"></div>
 
-<button onclick="createChar()">Create</button>
+<button onclick="createChar()">✅ Create</button>
 </div>
 
 <div class="card">
-<h3>Timeline</h3>
+<h3>🕒 Timeline</h3>
 <input id="year" placeholder="Year">
 <input id="event" placeholder="Event">
-<button onclick="addEvent()">Add</button>
+<button onclick="addEvent()">➕ Add</button>
 <div id="timeline"></div>
 </div>
 
 <div class="card">
-<button onclick="openRel()">Add Relationship</button>
+<button onclick="openRel()">🧵 Add Relationship</button>
 </div>
 
 <div id="mapWrap">
@@ -119,29 +120,30 @@ Character Studio
 <div id="info" class="panel" style="display:none"></div>
 
 <div id="edit" class="modal" style="display:none">
+<h3>✏️ Edit Character</h3>
 <input id="eName">
 <textarea id="eDesc"></textarea>
 <input type="color" id="eColor">
 <input type="range" id="eSize">
 
 <select id="eTraitSel"></select>
-<button onclick="addEditTrait()">Add Trait</button>
-<button onclick="removeAllTraits()">Clear Traits</button>
+<button onclick="addEditTrait()">➕ Trait</button>
 
 <div id="eTraits"></div>
 
-<button onclick="saveEdit()">Save</button>
-<button onclick="closeEdit()">Cancel</button>
+<button onclick="saveEdit()">💾 Save</button>
+<button onclick="closeEdit()">❌ Cancel</button>
 </div>
 
 <div id="rel" class="modal" style="display:none">
+<h3>🧵 Relationship</h3>
 <select id="rA"></select>
 <select id="rB"></select>
 <select id="rType"></select>
-<button onclick="addCustomRel()">+ Custom</button>
+<button onclick="addCustomRel()">✨ Custom</button>
 <input type="color" id="rColor">
-<button onclick="createRel()">Create</button>
-<button onclick="closeRel()">Cancel</button>
+<button onclick="createRel()">✅ Create</button>
+<button onclick="closeRel()">❌ Cancel</button>
 </div>
 
 <script>
@@ -179,11 +181,12 @@ traitList.innerHTML=tempTraits.map((t,i)=>
 
 // CREATE CHARACTER
 function createChar(){
-if(!name.value.trim())return alert("Enter name");
+let n=document.getElementById("name").value.trim();
+if(!n)return alert("Enter name");
 
 data.chars.push({
 id:Date.now(),
-name:name.value,
+name:n,
 desc:desc.value,
 color:color.value,
 size:+size.value,
@@ -197,19 +200,19 @@ tempTraits=[];
 render();
 }
 
-// INFO
+// INFO PANEL
 function showInfo(c){
 info.style.display="block";
 info.innerHTML=`
 <h3>${c.name}</h3>
 <p>${c.desc}</p>
 <p>${c.traits.join(", ")}</p>
-<button onclick="openEdit(${c.id})">Edit</button>
-<button onclick="deleteChar(${c.id})">Delete</button>
+<button onclick="openEdit(${c.id})">✏️ Edit</button>
+<button onclick="deleteChar(${c.id})">🗑️ Delete</button>
 `;
 }
 
-// DELETE CHAR
+// DELETE CHARACTER
 function deleteChar(id){
 data.chars=data.chars.filter(c=>c.id!==id);
 data.rels=data.rels.filter(r=>r.a!==id && r.b!==id);
@@ -244,20 +247,12 @@ if(!c.traits.includes(t)) c.traits.push(t);
 renderEditTraits(c);
 }
 
-function removeAllTraits(){
-let c=data.chars.find(x=>x.id===editId);
-c.traits=[];
-renderEditTraits(c);
-}
-
 function saveEdit(){
 let c=data.chars.find(x=>x.id===editId);
-
 c.name=eName.value;
 c.desc=eDesc.value;
 c.color=eColor.value;
 c.size=+eSize.value;
-
 closeEdit();
 render();
 }
@@ -266,15 +261,23 @@ function closeEdit(){edit.style.display="none";}
 
 // TIMELINE
 function addEvent(){
-if(!event.value)return;
-data.timeline.push({year:+year.value||0,text:event.value});
+let e=document.getElementById("event").value;
+if(!e)return;
+
+data.timeline.push({
+year:+year.value||0,
+text:e
+});
+
 render();
 }
 
-// REL
+// RELATIONSHIP
 function openRel(){
 rel.style.display="block";
+
 let opts=data.chars.map(c=>`<option value=${c.id}>${c.name}</option>`).join("");
+
 rA.innerHTML=opts;
 rB.innerHTML=opts;
 rType.innerHTML=REL.map(r=>`<option>${r}</option>`).join("");
@@ -314,7 +317,8 @@ charList.innerHTML=data.chars.map(c=>
 timeline.innerHTML=data.timeline
 .sort((a,b)=>a.year-b.year)
 .map((e,i)=>
-`<div>${e.year} - ${e.text} <button onclick="data.timeline.splice(${i},1);render()">❌</button></div>`
+`<div>🕒 ${e.year} - ${e.text} 
+<button onclick="data.timeline.splice(${i},1);render()">❌</button></div>`
 ).join("");
 
 renderMap();
@@ -324,7 +328,6 @@ renderMap();
 function renderMap(){
 map.innerHTML="";
 
-// lines
 data.rels.forEach((r,i)=>{
 let a=data.chars.find(c=>c.id===r.a);
 let b=data.chars.find(c=>c.id===r.b);
@@ -359,7 +362,6 @@ map.appendChild(line);
 map.appendChild(label);
 });
 
-// nodes
 data.chars.forEach(c=>{
 let node=document.createElement("div");
 node.className="node";
